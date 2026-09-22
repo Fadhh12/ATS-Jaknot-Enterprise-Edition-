@@ -29,7 +29,7 @@ export function SlideOver({
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
       <div
-        className="absolute inset-0 bg-navy/30 backdrop-blur-[1px] animate-[fadeIn_150ms_ease-out]"
+        className="absolute inset-0 bg-primary/30 backdrop-blur-[1px] animate-[fadeIn_150ms_ease-out]"
         onClick={onClose}
         aria-hidden
       />
@@ -41,8 +41,8 @@ export function SlideOver({
       >
         <div className="flex items-start justify-between border-b border-slate-100 px-6 py-5">
           <div>
-            <h2 className="text-lg font-semibold text-navy">{title}</h2>
-            {description && <p className="mt-1 text-sm text-slate-500">{description}</p>}
+            <h2 className="text-lg font-semibold text-text-primary">{title}</h2>
+            {description && <p className="mt-1 text-sm text-text-secondary">{description}</p>}
           </div>
           <button
             onClick={onClose}
