@@ -4,6 +4,8 @@ Applicant Tracking System connecting workforce planning (MPP) to hiring. Sprint 
 
 Full documentation (PRD, SRS, SDD, UI/UX, task breakdown): [docs/ATS-Jaknot-Master-Documentation.md](docs/ATS-Jaknot-Master-Documentation.md)
 
+Frontend visual redesign notes: [docs/UI-Redesign-Notes.md](docs/UI-Redesign-Notes.md)
+
 ## Tech Stack
 - **Backend:** FastAPI, SQLAlchemy, PostgreSQL, JWT auth
 - **Frontend:** Next.js, TypeScript, TailwindCSS (Workday-inspired design system)
