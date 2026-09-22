@@ -7,12 +7,12 @@ html {
 }
 
 body {
-  @apply bg-cloud-blue text-slate-800 antialiased;
+  @apply bg-canvas text-text-primary antialiased;
   font-variant-numeric: tabular-nums;
 }
 
 ::selection {
-  @apply bg-accent-orange/20;
+  @apply bg-accent/20;
 }
 
 /* subtle grain so flat panels don't feel sterile */
