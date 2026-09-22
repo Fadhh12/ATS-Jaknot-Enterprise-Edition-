@@ -39,7 +39,7 @@ export function JaknotWordmark({ className = "", size = "text-xl" }: { className
   return (
     <span className={`${size} font-extrabold tracking-tight ${className}`}>
       <span className="text-brand-blue">jak</span>
-      <span className="text-accent-orange">not</span>
+      <span className="text-accent">not</span>
     </span>
   );
 }
