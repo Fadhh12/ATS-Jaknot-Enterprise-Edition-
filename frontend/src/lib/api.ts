@@ -7,6 +7,9 @@ export type Requisition = {
   quantity: number;
   status: string;
   created_at: string;
+  // Display-only fields — optional so a real API response without them still fits.
+  salary_range?: string;
+  created_by?: string;
 };
 
 export type Candidate = {
@@ -15,6 +18,14 @@ export type Candidate = {
   email: string;
   folder_path: string;
   applied_at: string;
+  // Display-only fields — optional so a real API response without them still fits.
+  applicant_type?: string;
+  position_title?: string;
+  stage?: string;
+  phone?: string;
+  experience?: string;
+  cv_file?: string;
+  possible_duplicate?: boolean;
 };
 
 async function apiGet<T>(path: string): Promise<T[]> {
