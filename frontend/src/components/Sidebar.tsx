@@ -2,17 +2,20 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { JaknotMark, JaknotWordmark } from "@/components/JaknotLogo";
 
-const activeLinks: { href: string; label: string; icon: ReactNode }[] = [
+const navLinks: { href: string; label: string; icon: ReactNode }[] = [
   {
     href: "/",
-    label: "Dashboard",
+    label: "Overview",
     icon: (
-      <svg viewBox="0 0 20 20" fill="none" className="h-[18px] w-[18px]">
-        <path d="M3 10.5 10 4l7 6.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M5 9v6.5a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V9" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="size-5 shrink-0">
+        <rect x="3" y="3" width="7" height="7" rx="1.5" />
+        <rect x="14" y="3" width="7" height="7" rx="1.5" />
+        <rect x="3" y="14" width="7" height="7" rx="1.5" />
+        <rect x="14" y="14" width="7" height="7" rx="1.5" />
       </svg>
     ),
   },
@@ -20,9 +23,9 @@ const activeLinks: { href: string; label: string; icon: ReactNode }[] = [
     href: "/requisitions",
     label: "Job Requisitions",
     icon: (
-      <svg viewBox="0 0 20 20" fill="none" className="h-[18px] w-[18px]">
-        <rect x="4" y="3.5" width="12" height="14" rx="1.5" stroke="currentColor" strokeWidth="1.6" />
-        <path d="M7 8h6M7 11h6M7 14h3.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="size-5 shrink-0">
+        <path d="M4 6h16M4 12h10M4 18h14" strokeLinecap="round" />
+        <circle cx="19" cy="12" r="2" />
       </svg>
     ),
   },
@@ -30,9 +33,9 @@ const activeLinks: { href: string; label: string; icon: ReactNode }[] = [
     href: "/candidates",
     label: "Candidate Database",
     icon: (
-      <svg viewBox="0 0 20 20" fill="none" className="h-[18px] w-[18px]">
-        <circle cx="10" cy="7" r="3" stroke="currentColor" strokeWidth="1.6" />
-        <path d="M4 16.5c0-2.8 2.7-5 6-5s6 2.2 6 5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="size-5 shrink-0">
+        <circle cx="9" cy="8" r="3" />
+        <path d="M3 20a6 6 0 0 1 12 0M15 7.5a3 3 0 1 1 3 3M17 14a4 4 0 0 1 4 4" strokeLinecap="round" />
       </svg>
     ),
   },
@@ -41,82 +44,194 @@ const activeLinks: { href: string; label: string; icon: ReactNode }[] = [
 const lockedLinks = [
   "Workforce Planning",
   "Sourcing",
+  "Candidate Pipeline",
+  "Screening & Scorecard",
   "Interview Scheduling",
-  "Offer & Preboarding",
+  "Offers & Preboarding",
   "Reports & Analytics",
 ];
 
-export function Sidebar() {
+function LockIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="ml-auto size-3.5 shrink-0">
+      <rect x="5" y="10" width="14" height="10" rx="1.5" />
+      <path d="M8 10V7a4 4 0 0 1 8 0v3" />
+    </svg>
+  );
+}
+
+function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
+  const [roleOpen, setRoleOpen] = useState(false);
+  const roleRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function onClick(e: MouseEvent) {
+      if (roleRef.current && !roleRef.current.contains(e.target as Node)) setRoleOpen(false);
+    }
+    document.addEventListener("click", onClick);
+    return () => document.removeEventListener("click", onClick);
+  }, []);
 
   return (
-    <aside className="flex w-64 shrink-0 flex-col bg-navy text-white">
-      <div className="flex items-center gap-2.5 px-6 py-5">
-        <JaknotMark size={30} bare />
+    <>
+      <div className="flex items-center gap-2.5 px-1">
+        <JaknotMark size={36} />
         <div>
-          <JaknotWordmark size="text-base" />
-          <p className="text-[11px] leading-tight text-white/45">ATS · Enterprise Edition</p>
+          <JaknotWordmark size="text-lg" />
+          <p className="text-[11px] leading-tight text-white/50">ATS · Applicant Tracking System</p>
         </div>
       </div>
 
-      <nav className="flex-1 px-3 pt-3">
-        <p className="px-3 pb-2 text-[11px] font-medium uppercase tracking-wider text-white/35">
-          Sprint 1
-        </p>
-        <div className="space-y-0.5">
-          {activeLinks.map((link) => {
-            const isActive = pathname === link.href;
-            return (
-              <Link
-                key={link.href}
-                href={link.href}
-                aria-current={isActive ? "page" : undefined}
-                className={`group relative flex items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium transition-colors duration-150 ${
-                  isActive
-                    ? "bg-white/10 text-white"
-                    : "text-white/70 hover:bg-white/5 hover:text-white"
-                }`}
-              >
-                {isActive && (
-                  <span className="absolute -left-3 top-1/2 h-5 w-1 -translate-y-1/2 rounded-r bg-accent-orange" />
-                )}
-                <span className={isActive ? "text-accent-orange" : "text-white/50 group-hover:text-white/80"}>
-                  {link.icon}
-                </span>
-                {link.label}
-              </Link>
-            );
-          })}
-        </div>
+      <div ref={roleRef} className="relative mt-4">
+        <button
+          type="button"
+          aria-haspopup="true"
+          aria-expanded={roleOpen}
+          onClick={() => setRoleOpen((v) => !v)}
+          className="flex w-full items-center gap-3 rounded-control border border-white/10 bg-white/10 p-3 text-left transition hover:bg-white/[0.15] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+        >
+          <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-accent text-sm font-bold text-primary">
+            HR
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="text-sm font-semibold leading-tight">Human Resources</div>
+            <div className="text-xs text-white/60">HR Admin</div>
+          </div>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="size-4 shrink-0 text-white/60">
+            <path d="m7 10 5 5 5-5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
 
-        <div className="mt-6 border-t border-white/10 pt-4">
-          <p className="px-3 pb-2 text-[11px] font-medium uppercase tracking-wider text-white/35">
-            Roadmap
-          </p>
-          {lockedLinks.map((label) => (
-            <div
-              key={label}
-              className="flex cursor-not-allowed items-center justify-between rounded-md px-3 py-2 text-sm text-white/30"
-            >
-              <span>{label}</span>
-              <svg viewBox="0 0 16 16" fill="none" className="h-3.5 w-3.5">
-                <rect x="3.5" y="7" width="9" height="6" rx="1.2" stroke="currentColor" strokeWidth="1.4" />
-                <path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+        {roleOpen && (
+          <div className="absolute inset-x-3 top-full z-50 mt-2 overflow-hidden rounded-control border border-border bg-surface py-1 text-text-primary shadow-raised">
+            <button type="button" className="flex w-full items-center justify-between px-3 py-2 text-left text-sm font-medium transition hover:bg-surface-alt">
+              HR Admin
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="size-4 text-accent">
+                <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
-            </div>
-          ))}
+            </button>
+            <button type="button" className="flex w-full items-center px-3 py-2 text-left text-sm text-text-secondary transition hover:bg-surface-alt">
+              Recruiter
+            </button>
+            <button type="button" className="flex w-full items-center px-3 py-2 text-left text-sm text-text-secondary transition hover:bg-surface-alt">
+              Hiring Manager
+            </button>
+          </div>
+        )}
+      </div>
+
+      <div className="mt-4">
+        <label htmlFor="sidebarSearch" className="sr-only">
+          Search
+        </label>
+        <div className="relative">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-white/50">
+            <circle cx="11" cy="11" r="7" />
+            <path d="m20 20-4-4" />
+          </svg>
+          <input
+            id="sidebarSearch"
+            type="search"
+            placeholder="Search"
+            className="h-10 w-full rounded-control border border-white/10 bg-white/10 pl-9 pr-3 text-sm text-white placeholder:text-white/40 focus:border-white/30 focus:outline-none focus:ring-2 focus:ring-accent/30"
+          />
         </div>
+      </div>
+
+      <nav className="mt-5 space-y-1" aria-label="Primary navigation">
+        {navLinks.map((link) => {
+          const isActive = pathname === link.href;
+          return (
+            <Link
+              key={link.href}
+              href={link.href}
+              onClick={onNavigate}
+              aria-current={isActive ? "page" : undefined}
+              className={`flex min-h-11 items-center gap-3 rounded-control px-3 text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent active:scale-[0.99] ${
+                isActive ? "bg-surface font-semibold text-primary" : "text-white/75 hover:bg-white/10 hover:text-white"
+              }`}
+            >
+              {link.icon}
+              {link.label}
+            </Link>
+          );
+        })}
       </nav>
 
-      <div className="flex items-center gap-2.5 border-t border-white/10 px-5 py-4">
-        <div className="grid h-8 w-8 shrink-0 place-items-center rounded-[9px] bg-accent-orange/90 text-xs font-semibold">
-          NR
-        </div>
-        <div className="min-w-0">
-          <p className="truncate text-sm font-medium text-white">Nabil Rahman</p>
-          <p className="truncate text-[11px] text-white/45">HRIS & Product Dev Intern</p>
+      <div className="mt-6 min-h-0 flex-1 overflow-y-auto border-t border-white/10 pt-5">
+        <div className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-[0.08em] text-white/40">Future Modules</div>
+        <div className="space-y-1">
+          {lockedLinks.map((label) => (
+            <button
+              key={label}
+              type="button"
+              title={`${label} — coming after Sprint 1`}
+              className="flex min-h-10 w-full items-center gap-3 rounded-control px-3 text-left text-sm text-locked opacity-45 transition hover:opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="size-5 shrink-0">
+                <rect x="3" y="4" width="18" height="16" rx="2" />
+              </svg>
+              {label}
+              <LockIcon />
+            </button>
+          ))}
         </div>
       </div>
-    </aside>
+    </>
+  );
+}
+
+export function Sidebar() {
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  return (
+    <>
+      {/* Mobile top bar */}
+      <header className="sticky top-0 z-50 flex h-16 items-center justify-between border-b border-border bg-surface px-4 lg:hidden">
+        <div className="flex items-center gap-2.5">
+          <JaknotMark size={32} />
+          <div>
+            <JaknotWordmark size="text-base" />
+            <div className="text-xs text-text-secondary">HR Admin</div>
+          </div>
+        </div>
+        <button
+          type="button"
+          aria-label="Open navigation"
+          onClick={() => setMobileOpen(true)}
+          className="size-10 rounded-control border border-border bg-surface transition hover:bg-surface-alt focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent active:scale-[0.98]"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="mx-auto size-5">
+            <path d="M4 7h16M4 12h16M4 17h16" strokeLinecap="round" />
+          </svg>
+        </button>
+      </header>
+
+      {/* Desktop sidebar */}
+      <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col overflow-hidden bg-primary p-4 text-white lg:flex">
+        <SidebarContent />
+      </aside>
+
+      {/* Mobile off-canvas sidebar */}
+      {mobileOpen && (
+        <div className="fixed inset-0 z-[60] flex lg:hidden">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setMobileOpen(false)} aria-hidden />
+          <aside className="relative flex h-full w-60 flex-col overflow-hidden bg-primary p-4 text-white">
+            <button
+              type="button"
+              aria-label="Close navigation"
+              onClick={() => setMobileOpen(false)}
+              className="self-end size-9 rounded-control text-white/70 transition hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="mx-auto size-5">
+                <path d="m6 6 12 12M18 6 6 18" strokeLinecap="round" />
+              </svg>
+            </button>
+            <SidebarContent onNavigate={() => setMobileOpen(false)} />
+          </aside>
+        </div>
+      )}
+    </>
   );
 }
