@@ -1,7 +1,6 @@
 import re
 from datetime import datetime
 
-from fastapi import HTTPException, status
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
@@ -24,11 +23,7 @@ def find_duplicate(db: Session, email: str, phone: str) -> Candidate | None:
 
 
 def intake_candidate(db: Session, payload: CandidateIntake) -> Candidate:
-    if find_duplicate(db, payload.email, payload.phone):
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Candidate with this email or phone already exists",
-        )
+    is_duplicate = find_duplicate(db, payload.email, payload.phone) is not None
 
     applied_at = datetime.utcnow()
     candidate = Candidate(
@@ -36,6 +31,10 @@ def intake_candidate(db: Session, payload: CandidateIntake) -> Candidate:
         email=payload.email,
         phone=payload.phone,
         cv_file_url=payload.cv_file_url,
+        position_title=payload.position_title,
+        stage=payload.stage,
+        applicant_type=payload.applicant_type,
+        possible_duplicate=is_duplicate,
         folder_path=build_folder_path(payload.position_title, payload.stage, applied_at),
         applied_at=applied_at,
     )

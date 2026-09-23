@@ -13,7 +13,7 @@ router = APIRouter(prefix="/api/v1/candidates", tags=["candidates"])
 def intake_candidate(
     payload: CandidateIntake,
     db: Session = Depends(get_db),
-    _user=Depends(require_role("recruiter", "admin")),
+    _user=Depends(require_role("recruiter", "admin", "hr_manager")),
 ):
     return service.intake_candidate(db, payload)
 
@@ -22,6 +22,6 @@ def intake_candidate(
 def search_candidates(
     q: str | None = Query(default=None),
     db: Session = Depends(get_db),
-    _user=Depends(require_role("recruiter", "admin", "hiring_manager", "management")),
+    _user=Depends(require_role("recruiter", "admin", "hiring_manager", "management", "hr_manager")),
 ):
     return service.search_candidates(db, q)

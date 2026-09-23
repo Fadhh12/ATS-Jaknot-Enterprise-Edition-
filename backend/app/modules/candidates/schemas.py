@@ -10,7 +10,8 @@ class CandidateIntake(BaseModel):
     phone: str
     cv_file_url: str
     position_title: str  # used to derive folder_path
-    stage: str = "screening"
+    stage: str = "Applied"
+    applicant_type: str = "Full-time"
 
 
 class CandidateOut(BaseModel):
@@ -19,6 +20,10 @@ class CandidateOut(BaseModel):
     email: str
     phone: str
     cv_file_url: str
+    position_title: str
+    stage: str
+    applicant_type: str
+    possible_duplicate: bool
     folder_path: str
     applied_at: datetime
 
