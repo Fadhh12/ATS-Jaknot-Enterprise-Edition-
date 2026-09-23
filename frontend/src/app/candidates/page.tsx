@@ -1,12 +1,17 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { searchCandidates, type Candidate } from "@/lib/api";
-import { automatedFolders, dummyCandidates } from "@/lib/dummy-data";
+import type { FormEvent } from "react";
+import { ApiError, intakeCandidate, searchCandidates, type Candidate } from "@/lib/api";
+import { dummyCandidates } from "@/lib/dummy-data";
+import { groupByPositionStage } from "@/lib/folders";
 import { StatusBadge } from "@/components/StatusBadge";
 import { SkeletonRows } from "@/components/SkeletonRows";
+import { SlideOver } from "@/components/SlideOver";
 
 const dateFormatter = new Intl.DateTimeFormat("en-US", { day: "2-digit", month: "short", year: "numeric" });
+const STAGES = ["Applied", "Screening", "Shortlist", "Hired"];
+const APPLICANT_TYPES = ["Full-time", "Daily Worker"];
 
 function initialsOf(name: string) {
   return name
@@ -17,33 +22,69 @@ function initialsOf(name: string) {
     .join("");
 }
 
+function fileNameOf(url: string) {
+  try {
+    return decodeURIComponent(url.split("/").pop() ?? url);
+  } catch {
+    return url;
+  }
+}
+
+const emptyForm = {
+  full_name: "",
+  email: "",
+  phone: "",
+  cv_file_url: "",
+  position_title: "",
+  stage: "Applied",
+  applicant_type: "Full-time",
+};
+
 export default function CandidatesPage() {
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [loading, setLoading] = useState(true);
   const [usingFallback, setUsingFallback] = useState(false);
   const [query, setQuery] = useState("");
+  const [stageFilter, setStageFilter] = useState("");
+  const [typeFilter, setTypeFilter] = useState("");
   const [folderFilter, setFolderFilter] = useState<{ position: string; stage: string } | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState(emptyForm);
+  const [submitting, setSubmitting] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
-  useEffect(() => {
+  function load() {
+    setLoading(true);
     searchCandidates()
-      .then((data) => setCandidates(data.length ? data : dummyCandidates))
+      .then((data) => {
+        setCandidates(data.length ? data : dummyCandidates);
+        setUsingFallback(data.length === 0);
+      })
       .catch(() => {
         setCandidates(dummyCandidates);
         setUsingFallback(true);
       })
       .finally(() => setLoading(false));
+  }
+
+  useEffect(() => {
+    load();
   }, []);
 
   useEffect(() => {
     if (!selectedId && candidates.length) setSelectedId(candidates[0].id);
   }, [candidates, selectedId]);
 
+  const automatedFolders = useMemo(() => groupByPositionStage(candidates), [candidates]);
+
   const filtered = useMemo(() => {
     let list = candidates;
     if (folderFilter) {
       list = list.filter((c) => c.position_title === folderFilter.position && c.stage === folderFilter.stage);
     }
+    if (stageFilter) list = list.filter((c) => c.stage === stageFilter);
+    if (typeFilter) list = list.filter((c) => c.applicant_type === typeFilter);
     if (query.trim()) {
       const q = query.toLowerCase();
       list = list.filter(
@@ -51,20 +92,38 @@ export default function CandidatesPage() {
       );
     }
     return list;
-  }, [candidates, folderFilter, query]);
+  }, [candidates, folderFilter, stageFilter, typeFilter, query]);
 
   const selected = candidates.find((c) => c.id === selectedId) ?? candidates[0];
 
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    if (!form.full_name || !form.email || !form.phone || !form.position_title) return;
+    setSubmitting(true);
+    setFormError(null);
+    try {
+      const created = await intakeCandidate({
+        ...form,
+        cv_file_url: form.cv_file_url || `https://storage.local/cv/${encodeURIComponent(form.full_name)}.pdf`,
+      });
+      setCandidates((prev) => [created, ...prev]);
+      setSelectedId(created.id);
+      setForm(emptyForm);
+      setOpen(false);
+    } catch (err) {
+      setFormError(err instanceof ApiError ? err.message : "Could not reach the server. Try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   return (
     <div>
-      <div className="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-        <div>
-          <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted">Screen 3 · Candidate Database</div>
-          <h1 className="mt-1 text-3xl font-bold tracking-tight text-text-primary lg:text-[40px] lg:leading-[48px]">Candidate Database</h1>
-          <p className="mt-1 text-sm text-text-secondary">FR-01 · Centralized Candidate Database &amp; Automated Foldering</p>
-        </div>
+      <div className="mb-5 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+        <h1 className="text-2xl font-bold tracking-tight text-text-primary lg:text-3xl">Candidate Database</h1>
         <button
           type="button"
+          onClick={() => setOpen(true)}
           className="inline-flex h-11 items-center justify-center gap-2 rounded-control bg-accent px-5 text-sm font-semibold text-primary transition hover:bg-accent-hover active:scale-[0.98]"
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="size-4">
@@ -80,8 +139,8 @@ export default function CandidatesPage() {
         </p>
       )}
 
-      <div className="mb-4 flex flex-col gap-2 sm:flex-row">
-        <div className="relative flex-1">
+      <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+        <div className="relative flex-1 sm:min-w-[200px]">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-text-muted">
             <circle cx="11" cy="11" r="7" />
             <path d="m20 20-4-4" />
@@ -94,21 +153,32 @@ export default function CandidatesPage() {
             className="h-10 w-full rounded-control border border-border bg-surface-alt pl-9 pr-3 text-sm text-text-primary placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-accent/30"
           />
         </div>
-        <button type="button" className="h-10 shrink-0 rounded-control border border-border bg-surface px-3 text-sm font-medium transition hover:bg-surface-alt">
-          Filter
-        </button>
-        <select className="h-10 rounded-control border border-border bg-surface px-3 text-sm text-text-secondary focus:border-primary focus:outline-none focus:ring-2 focus:ring-accent/30">
-          <option>Stage</option>
-          <option>Applied</option>
-          <option>Screening</option>
-          <option>Shortlist</option>
-          <option>Hired</option>
-        </select>
-        <select className="h-10 rounded-control border border-border bg-surface px-3 text-sm text-text-secondary focus:border-primary focus:outline-none focus:ring-2 focus:ring-accent/30">
-          <option>Applicant Type</option>
-          <option>Full-time</option>
-          <option>Daily Worker</option>
-        </select>
+        <div className="grid grid-cols-2 gap-2 sm:flex">
+          <select
+            value={stageFilter}
+            onChange={(e) => setStageFilter(e.target.value)}
+            className="h-10 rounded-control border border-border bg-surface px-3 text-sm text-text-secondary focus:border-primary focus:outline-none focus:ring-2 focus:ring-accent/30"
+          >
+            <option value="">Stage</option>
+            {STAGES.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </select>
+          <select
+            value={typeFilter}
+            onChange={(e) => setTypeFilter(e.target.value)}
+            className="h-10 rounded-control border border-border bg-surface px-3 text-sm text-text-secondary focus:border-primary focus:outline-none focus:ring-2 focus:ring-accent/30"
+          >
+            <option value="">Applicant Type</option>
+            {APPLICANT_TYPES.map((t) => (
+              <option key={t} value={t}>
+                {t}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
@@ -157,6 +227,7 @@ export default function CandidatesPage() {
                 })}
               </div>
             ))}
+            {!loading && automatedFolders.length === 0 && <p className="px-2 py-4 text-text-muted">No candidates yet.</p>}
           </div>
         </article>
 
@@ -247,18 +318,19 @@ export default function CandidatesPage() {
                   <div className="text-text-secondary">{selected.phone}</div>
                 </div>
                 <div>
-                  <div className="font-semibold uppercase tracking-[0.05em] text-text-muted">Experience</div>
-                  <div className="mt-1 text-text-secondary">{selected.experience}</div>
-                </div>
-                <div>
                   <div className="font-semibold uppercase tracking-[0.05em] text-text-muted">CV Document</div>
-                  <div className="mt-1 flex items-center gap-2 rounded-control border border-border px-2 py-1.5 text-text-secondary">
+                  <a
+                    href={selected.cv_file_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-1 flex items-center gap-2 rounded-control border border-border px-2 py-1.5 text-text-secondary transition hover:bg-surface-alt hover:text-primary"
+                  >
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="size-4 shrink-0">
                       <path d="M6 3h9l5 5v13H6z" />
                       <path d="M15 3v5h5" />
                     </svg>
-                    <span className="truncate">{selected.cv_file}</span>
-                  </div>
+                    <span className="truncate">{fileNameOf(selected.cv_file_url)}</span>
+                  </a>
                 </div>
                 <div>
                   <div className="font-semibold uppercase tracking-[0.05em] text-text-muted">Folder Path</div>
@@ -271,6 +343,105 @@ export default function CandidatesPage() {
           )}
         </article>
       </div>
+
+      <SlideOver open={open} onClose={() => setOpen(false)} title="Add Candidate" description="FR-01.2 automated foldering runs on submit.">
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold text-text-secondary">Full Name</label>
+            <input
+              required
+              value={form.full_name}
+              onChange={(e) => setForm({ ...form, full_name: e.target.value })}
+              placeholder="e.g. Siti Rahma"
+              className="h-10 w-full rounded-control border border-border bg-surface-alt px-3 text-sm text-text-primary placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-accent/30"
+            />
+          </div>
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold text-text-secondary">Email</label>
+            <input
+              required
+              type="email"
+              value={form.email}
+              onChange={(e) => setForm({ ...form, email: e.target.value })}
+              placeholder="candidate@email.com"
+              className="h-10 w-full rounded-control border border-border bg-surface-alt px-3 text-sm text-text-primary placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-accent/30"
+            />
+          </div>
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold text-text-secondary">Phone</label>
+            <input
+              required
+              value={form.phone}
+              onChange={(e) => setForm({ ...form, phone: e.target.value })}
+              placeholder="+62 8xx-xxxx-xxxx"
+              className="h-10 w-full rounded-control border border-border bg-surface-alt px-3 text-sm text-text-primary placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-accent/30"
+            />
+          </div>
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold text-text-secondary">Position Applied For</label>
+            <input
+              required
+              value={form.position_title}
+              onChange={(e) => setForm({ ...form, position_title: e.target.value })}
+              placeholder="e.g. Warehouse Supervisor"
+              className="h-10 w-full rounded-control border border-border bg-surface-alt px-3 text-sm text-text-primary placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-accent/30"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="mb-1.5 block text-xs font-semibold text-text-secondary">Stage</label>
+              <select
+                value={form.stage}
+                onChange={(e) => setForm({ ...form, stage: e.target.value })}
+                className="h-10 w-full rounded-control border border-border bg-surface-alt px-3 text-sm text-text-primary focus:border-primary focus:outline-none focus:ring-2 focus:ring-accent/30"
+              >
+                {STAGES.map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="mb-1.5 block text-xs font-semibold text-text-secondary">Type</label>
+              <select
+                value={form.applicant_type}
+                onChange={(e) => setForm({ ...form, applicant_type: e.target.value })}
+                className="h-10 w-full rounded-control border border-border bg-surface-alt px-3 text-sm text-text-primary focus:border-primary focus:outline-none focus:ring-2 focus:ring-accent/30"
+              >
+                {APPLICANT_TYPES.map((t) => (
+                  <option key={t} value={t}>
+                    {t}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold text-text-secondary">CV URL (optional)</label>
+            <input
+              value={form.cv_file_url}
+              onChange={(e) => setForm({ ...form, cv_file_url: e.target.value })}
+              placeholder="https://..."
+              className="h-10 w-full rounded-control border border-border bg-surface-alt px-3 text-sm text-text-primary placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-accent/30"
+            />
+          </div>
+
+          {formError && (
+            <p role="alert" className="rounded-control bg-error/10 px-3 py-2 text-xs text-error">
+              {formError}
+            </p>
+          )}
+
+          <button
+            type="submit"
+            disabled={submitting}
+            className="h-11 w-full rounded-control bg-accent text-sm font-semibold text-primary transition hover:bg-accent-hover active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {submitting ? "Adding…" : "Add Candidate"}
+          </button>
+        </form>
+      </SlideOver>
     </div>
   );
 }
