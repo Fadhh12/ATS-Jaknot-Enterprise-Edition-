@@ -11,6 +11,9 @@ class Settings(BaseSettings):
     storage_bucket_url: str = ""
     storage_access_key: str = ""
     storage_secret_key: str = ""
+    seed_admin_name: str = "Admin"
+    seed_admin_email: str = "admin@jaknot.local"
+    seed_admin_password: str = "change-me-please"
 
 
 settings = Settings()
