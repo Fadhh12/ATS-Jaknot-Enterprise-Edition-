@@ -12,7 +12,7 @@ router = APIRouter(prefix="/api/v1/requisitions", tags=["requisitions"])
 
 
 @router.get("", response_model=list[RequisitionOut])
-def list_requisitions(db: Session = Depends(get_db), _user=Depends(require_role("admin", "recruiter", "hiring_manager", "management"))):
+def list_requisitions(db: Session = Depends(get_db), _user=Depends(require_role("admin", "recruiter", "hiring_manager", "management", "hr_manager"))):
     return service.list_requisitions(db)
 
 
