@@ -9,8 +9,9 @@ export const dummyRequisitions: Requisition[] = [
     position_title: "Warehouse Supervisor",
     department_id: "Warehouse",
     quantity: 2,
+    justification: "Backlog in outbound shipments needs a dedicated supervisor.",
+    budget_range: "Rp8M–Rp10M",
     status: "Pending Approval",
-    salary_range: "Rp8M–Rp10M",
     created_by: "Rizky",
     created_at: "2026-09-21T08:00:00Z",
   },
@@ -19,8 +20,9 @@ export const dummyRequisitions: Requisition[] = [
     position_title: "Recruitment Admin",
     department_id: "HRGA",
     quantity: 1,
+    justification: "Support growing hiring volume for warehouse roles.",
+    budget_range: "Rp6M–Rp8M",
     status: "Approved",
-    salary_range: "Rp6M–Rp8M",
     created_by: "Nabil",
     created_at: "2026-09-20T08:00:00Z",
   },
@@ -29,8 +31,9 @@ export const dummyRequisitions: Requisition[] = [
     position_title: "Graphic Designer",
     department_id: "Marketing",
     quantity: 1,
+    justification: "Campaign assets backlog for Q4 launch.",
+    budget_range: "Rp7M–Rp9M",
     status: "Draft",
-    salary_range: "Rp7M–Rp9M",
     created_by: "Alya",
     created_at: "2026-09-19T08:00:00Z",
   },
@@ -39,8 +42,9 @@ export const dummyRequisitions: Requisition[] = [
     position_title: "Store Crew",
     department_id: "Operations",
     quantity: 8,
+    justification: "New store opening next month.",
+    budget_range: "Rp4.5M–Rp5.5M",
     status: "Approved",
-    salary_range: "Rp4.5M–Rp5.5M",
     created_by: "Dimas",
     created_at: "2026-09-18T08:00:00Z",
   },
@@ -57,8 +61,8 @@ export const dummyCandidates: Candidate[] = [
     folder_path: "Warehouse Supervisor/Screening",
     applied_at: "2026-09-21T00:00:00Z",
     phone: "+62 812-3456-7890",
-    experience: "4 yrs · Logistics Supervisor",
-    cv_file: "Aisyah_Putri_CV.pdf",
+    cv_file_url: "https://storage.local/cv/Aisyah_Putri_CV.pdf",
+    possible_duplicate: false,
   },
   {
     id: "cand-rizky",
@@ -70,8 +74,8 @@ export const dummyCandidates: Candidate[] = [
     folder_path: "Warehouse Supervisor/Applied",
     applied_at: "2026-09-20T00:00:00Z",
     phone: "+62 813-2211-4590",
-    experience: "2 yrs · Warehouse Operator",
-    cv_file: "Rizky_Pratama_CV.pdf",
+    cv_file_url: "https://storage.local/cv/Rizky_Pratama_CV.pdf",
+    possible_duplicate: false,
   },
   {
     id: "cand-dina",
@@ -83,8 +87,8 @@ export const dummyCandidates: Candidate[] = [
     folder_path: "Recruitment Admin/Screening",
     applied_at: "2026-09-19T00:00:00Z",
     phone: "+62 811-7788-2200",
-    experience: "3 yrs · HR Administration",
-    cv_file: "Dina_Sari_CV.pdf",
+    cv_file_url: "https://storage.local/cv/Dina_Sari_CV.pdf",
+    possible_duplicate: false,
   },
   {
     id: "cand-fajar",
@@ -96,8 +100,8 @@ export const dummyCandidates: Candidate[] = [
     folder_path: "Graphic Designer/Applied",
     applied_at: "2026-09-18T00:00:00Z",
     phone: "+62 817-4433-9021",
-    experience: "5 yrs · Brand & Visual Design",
-    cv_file: "Fajar_Adi_CV.pdf",
+    cv_file_url: "https://storage.local/cv/Fajar_Adi_CV.pdf",
+    possible_duplicate: false,
   },
   {
     id: "cand-nadia",
@@ -109,8 +113,8 @@ export const dummyCandidates: Candidate[] = [
     folder_path: "Recruitment Admin/Hired",
     applied_at: "2026-09-17T00:00:00Z",
     phone: "+62 815-6690-3312",
-    experience: "1 yr · HR Support",
-    cv_file: "Nadia_Wulan_CV.pdf",
+    cv_file_url: "https://storage.local/cv/Nadia_Wulan_CV.pdf",
+    possible_duplicate: false,
   },
   {
     id: "cand-raka",
@@ -122,17 +126,9 @@ export const dummyCandidates: Candidate[] = [
     folder_path: "Graphic Designer/Applied",
     applied_at: "2026-09-16T00:00:00Z",
     phone: "+62 819-2245-6610",
-    experience: "2 yrs · Visual Design (possible duplicate of Fajar Adi)",
-    cv_file: "Raka_Kurnia_CV.pdf",
+    cv_file_url: "https://storage.local/cv/Raka_Kurnia_CV.pdf",
     possible_duplicate: true,
   },
-];
-
-export const pendingApprovals = [
-  { id: "req-1", title: "Warehouse Supervisor", department: "Warehouse", waitingOn: "Rizky" },
-  { id: "req-4", title: "Store Crew", department: "Operations", waitingOn: "Dimas" },
-  { id: "req-2", title: "Recruitment Admin", department: "HRGA", waitingOn: "Nabil" },
-  { id: "req-3", title: "Graphic Designer", department: "Marketing", waitingOn: "Alya" },
 ];
 
 export const recentActivity = [
@@ -149,33 +145,6 @@ export const candidateIntakeMonths = [
   { label: "Jul", value: 67 },
   { label: "Aug", value: 72 },
   { label: "Sep", value: 86 },
-];
-
-export const candidateComposition = [
-  { label: "Full-time", pct: 55, tone: "primary" },
-  { label: "Daily Worker", pct: 25, tone: "accent" },
-  { label: "Other", pct: 20, tone: "success" },
-];
-
-export const automatedFolders = [
-  {
-    position: "Warehouse Supervisor",
-    stages: [
-      { stage: "Applied", count: 14 },
-      { stage: "Screening", count: 6 },
-    ],
-  },
-  {
-    position: "Recruitment Admin",
-    stages: [
-      { stage: "Applied", count: 9 },
-      { stage: "Screening", count: 3 },
-    ],
-  },
-  {
-    position: "Graphic Designer",
-    stages: [{ stage: "Applied", count: 6 }],
-  },
 ];
 
 export const sprintModules = [
