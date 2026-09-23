@@ -1,6 +1,16 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useAuth } from "@/lib/auth";
+
+function initialsOf(name: string) {
+  return name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase())
+    .join("");
+}
 
 const notifications = [
   { title: "New candidate applied", detail: "Aisyah Putri · Warehouse Supervisor", time: "10 minutes ago", tone: "bg-accent" },
@@ -9,6 +19,7 @@ const notifications = [
 ];
 
 export function Topbar() {
+  const { user, logout } = useAuth();
   const [notifOpen, setNotifOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
   const notifRef = useRef<HTMLDivElement>(null);
@@ -83,10 +94,12 @@ export function Topbar() {
             onClick={() => setAccountOpen((v) => !v)}
             className="flex items-center gap-3 rounded-control transition hover:bg-surface-alt focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent active:scale-[0.98]"
           >
-            <div className="flex size-9 items-center justify-center rounded-full bg-primary text-xs font-bold text-white">NR</div>
+            <div className="flex size-9 items-center justify-center rounded-full bg-primary text-xs font-bold text-white">
+              {user ? initialsOf(user.name) : ""}
+            </div>
             <div className="hidden text-left xl:block">
-              <div className="text-sm font-semibold">Nabil</div>
-              <div className="text-xs text-text-secondary">HR Admin</div>
+              <div className="text-sm font-semibold">{user?.name}</div>
+              <div className="text-xs capitalize text-text-secondary">{user?.role.replace("_", " ")}</div>
             </div>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="hidden size-4 shrink-0 text-text-muted xl:block">
               <path d="m7 10 5 5 5-5" strokeLinecap="round" strokeLinejoin="round" />
@@ -96,10 +109,12 @@ export function Topbar() {
           {accountOpen && (
             <div className="absolute right-0 top-full z-50 mt-2 w-64 overflow-hidden rounded-card border border-border bg-surface shadow-raised">
               <div className="flex items-center gap-3 border-b border-border px-4 py-3">
-                <div className="flex size-10 items-center justify-center rounded-full bg-primary text-sm font-bold text-white">NR</div>
+                <div className="flex size-10 items-center justify-center rounded-full bg-primary text-sm font-bold text-white">
+                  {user ? initialsOf(user.name) : ""}
+                </div>
                 <div className="min-w-0">
-                  <div className="truncate text-sm font-semibold">Nabil</div>
-                  <div className="truncate text-xs text-text-secondary">nabil@jaknot.co.id</div>
+                  <div className="truncate text-sm font-semibold">{user?.name}</div>
+                  <div className="truncate text-xs text-text-secondary">{user?.email}</div>
                 </div>
               </div>
               <div className="py-1">
@@ -119,7 +134,11 @@ export function Topbar() {
                 </button>
               </div>
               <div className="border-t border-border py-1">
-                <button type="button" className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-sm font-medium text-error transition hover:bg-error/10">
+                <button
+                  type="button"
+                  onClick={logout}
+                  className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-sm font-medium text-error transition hover:bg-error/10"
+                >
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="size-4">
                     <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" strokeLinecap="round" strokeLinejoin="round" />
                     <path d="M16 17l5-5-5-5M21 12H9" strokeLinecap="round" strokeLinejoin="round" />

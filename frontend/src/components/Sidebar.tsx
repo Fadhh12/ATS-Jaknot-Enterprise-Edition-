@@ -5,6 +5,16 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { JaknotMark, JaknotWordmark } from "@/components/JaknotLogo";
+import { useAuth } from "@/lib/auth";
+
+function initialsOf(name: string) {
+  return name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase())
+    .join("");
+}
 
 const navLinks: { href: string; label: string; icon: ReactNode }[] = [
   {
@@ -62,6 +72,7 @@ function LockIcon() {
 
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
+  const { user, logout } = useAuth();
   const [roleOpen, setRoleOpen] = useState(false);
   const roleRef = useRef<HTMLDivElement>(null);
 
@@ -92,11 +103,11 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
           className="flex w-full items-center gap-3 rounded-control border border-white/10 bg-white/10 p-3 text-left transition hover:bg-white/[0.15] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
         >
           <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-accent text-sm font-bold text-primary">
-            HR
+            {user ? initialsOf(user.name) : ""}
           </div>
           <div className="min-w-0 flex-1">
-            <div className="text-sm font-semibold leading-tight">Human Resources</div>
-            <div className="text-xs text-white/60">HR Admin</div>
+            <div className="truncate text-sm font-semibold leading-tight">{user?.name}</div>
+            <div className="truncate text-xs capitalize text-white/60">{user?.role.replace("_", " ")}</div>
           </div>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="size-4 shrink-0 text-white/60">
             <path d="m7 10 5 5 5-5" strokeLinecap="round" strokeLinejoin="round" />
@@ -105,17 +116,17 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
 
         {roleOpen && (
           <div className="absolute inset-x-3 top-full z-50 mt-2 overflow-hidden rounded-control border border-border bg-surface py-1 text-text-primary shadow-raised">
-            <button type="button" className="flex w-full items-center justify-between px-3 py-2 text-left text-sm font-medium transition hover:bg-surface-alt">
-              HR Admin
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="size-4 text-accent">
-                <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
+            <div className="truncate px-3 py-2 text-xs text-text-secondary">{user?.email}</div>
+            <button
+              type="button"
+              onClick={logout}
+              className="flex w-full items-center gap-2 border-t border-border px-3 py-2 text-left text-sm font-medium text-error transition hover:bg-error/10"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="size-4">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M16 17l5-5-5-5M21 12H9" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
-            </button>
-            <button type="button" className="flex w-full items-center px-3 py-2 text-left text-sm text-text-secondary transition hover:bg-surface-alt">
-              Recruiter
-            </button>
-            <button type="button" className="flex w-full items-center px-3 py-2 text-left text-sm text-text-secondary transition hover:bg-surface-alt">
-              Hiring Manager
+              Log Out
             </button>
           </div>
         )}
@@ -183,6 +194,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
 }
 
 export function Sidebar() {
+  const { user } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
@@ -193,7 +205,7 @@ export function Sidebar() {
           <JaknotMark size={32} />
           <div>
             <JaknotWordmark size="text-base" />
-            <div className="text-xs text-text-secondary">HR Admin</div>
+            <div className="truncate text-xs capitalize text-text-secondary">{user?.role.replace("_", " ") ?? "—"}</div>
           </div>
         </div>
         <button
