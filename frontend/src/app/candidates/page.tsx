@@ -1,9 +1,23 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import type { FormEvent } from "react";
-import { ApiError, intakeCandidate, searchCandidates, type Candidate } from "@/lib/api";
+import type { ChangeEvent, FormEvent } from "react";
+import {
+  ApiError,
+  assignCandidateFolder,
+  createFolder,
+  deleteFolder,
+  intakeCandidate,
+  listFolders,
+  renameFolder,
+  resolveFileUrl,
+  searchCandidates,
+  uploadCv,
+  type Candidate,
+  type Folder,
+} from "@/lib/api";
 import { dummyCandidates } from "@/lib/dummy-data";
+import { toWhatsAppLink } from "@/lib/contact";
 import { groupByPositionStage } from "@/lib/folders";
 import { StatusBadge } from "@/components/StatusBadge";
 import { SkeletonRows } from "@/components/SkeletonRows";
@@ -30,11 +44,14 @@ function fileNameOf(url: string) {
   }
 }
 
+function isPdf(url: string) {
+  return url.toLowerCase().endsWith(".pdf");
+}
+
 const emptyForm = {
   full_name: "",
   email: "",
   phone: "",
-  cv_file_url: "",
   position_title: "",
   stage: "Applied",
   applicant_type: "Full-time",
@@ -42,30 +59,39 @@ const emptyForm = {
 
 export default function CandidatesPage() {
   const [candidates, setCandidates] = useState<Candidate[]>([]);
+  const [folders, setFolders] = useState<Folder[]>([]);
   const [loading, setLoading] = useState(true);
   const [usingFallback, setUsingFallback] = useState(false);
   const [query, setQuery] = useState("");
   const [stageFilter, setStageFilter] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
-  const [folderFilter, setFolderFilter] = useState<{ position: string; stage: string } | null>(null);
+  const [autoFolderFilter, setAutoFolderFilter] = useState<{ position: string; stage: string } | null>(null);
+  const [customFolderFilter, setCustomFolderFilter] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(emptyForm);
+  const [cvFile, setCvFile] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [newFolderName, setNewFolderName] = useState("");
+  const [editingFolderId, setEditingFolderId] = useState<string | null>(null);
+  const [editingFolderName, setEditingFolderName] = useState("");
+  const [movingFolder, setMovingFolder] = useState(false);
+  const [cvModalOpen, setCvModalOpen] = useState(false);
 
   function load() {
     setLoading(true);
-    searchCandidates()
-      .then((data) => {
-        setCandidates(data.length ? data : dummyCandidates);
-        setUsingFallback(data.length === 0);
-      })
-      .catch(() => {
+    Promise.allSettled([searchCandidates(), listFolders()]).then(([candResult, folderResult]) => {
+      if (candResult.status === "fulfilled" && candResult.value.length) {
+        setCandidates(candResult.value);
+        setUsingFallback(false);
+      } else {
         setCandidates(dummyCandidates);
         setUsingFallback(true);
-      })
-      .finally(() => setLoading(false));
+      }
+      if (folderResult.status === "fulfilled") setFolders(folderResult.value);
+      setLoading(false);
+    });
   }
 
   useEffect(() => {
@@ -76,13 +102,27 @@ export default function CandidatesPage() {
     if (!selectedId && candidates.length) setSelectedId(candidates[0].id);
   }, [candidates, selectedId]);
 
+  useEffect(() => {
+    setCvModalOpen(false);
+  }, [selectedId]);
+
+  useEffect(() => {
+    if (!cvModalOpen) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setCvModalOpen(false);
+    }
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [cvModalOpen]);
+
   const automatedFolders = useMemo(() => groupByPositionStage(candidates), [candidates]);
 
   const filtered = useMemo(() => {
     let list = candidates;
-    if (folderFilter) {
-      list = list.filter((c) => c.position_title === folderFilter.position && c.stage === folderFilter.stage);
+    if (autoFolderFilter) {
+      list = list.filter((c) => c.position_title === autoFolderFilter.position && c.stage === autoFolderFilter.stage);
     }
+    if (customFolderFilter) list = list.filter((c) => c.folder_id === customFolderFilter);
     if (stageFilter) list = list.filter((c) => c.stage === stageFilter);
     if (typeFilter) list = list.filter((c) => c.applicant_type === typeFilter);
     if (query.trim()) {
@@ -92,7 +132,7 @@ export default function CandidatesPage() {
       );
     }
     return list;
-  }, [candidates, folderFilter, stageFilter, typeFilter, query]);
+  }, [candidates, autoFolderFilter, customFolderFilter, stageFilter, typeFilter, query]);
 
   const selected = candidates.find((c) => c.id === selectedId) ?? candidates[0];
 
@@ -102,18 +142,82 @@ export default function CandidatesPage() {
     setSubmitting(true);
     setFormError(null);
     try {
-      const created = await intakeCandidate({
-        ...form,
-        cv_file_url: form.cv_file_url || `https://storage.local/cv/${encodeURIComponent(form.full_name)}.pdf`,
-      });
+      let cv_file_url = `https://storage.local/cv/${encodeURIComponent(form.full_name)}.pdf`;
+      if (cvFile) {
+        const uploaded = await uploadCv(cvFile);
+        cv_file_url = uploaded.url;
+      }
+      const created = await intakeCandidate({ ...form, cv_file_url });
       setCandidates((prev) => [created, ...prev]);
       setSelectedId(created.id);
       setForm(emptyForm);
+      setCvFile(null);
       setOpen(false);
     } catch (err) {
       setFormError(err instanceof ApiError ? err.message : "Could not reach the server. Try again.");
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  function handleFileChange(e: ChangeEvent<HTMLInputElement>) {
+    setCvFile(e.target.files?.[0] ?? null);
+  }
+
+  async function handleCreateFolder() {
+    if (!newFolderName.trim()) return;
+    try {
+      const created = await createFolder(newFolderName.trim());
+      setFolders((prev) => [created, ...prev]);
+      setNewFolderName("");
+    } catch {
+      // Backend unreachable — silently skip, fallback data has nothing to persist to.
+    }
+  }
+
+  async function handleRenameFolder(id: string) {
+    if (!editingFolderName.trim()) {
+      setEditingFolderId(null);
+      return;
+    }
+    try {
+      const updated = await renameFolder(id, editingFolderName.trim());
+      setFolders((prev) => prev.map((f) => (f.id === id ? updated : f)));
+    } catch {
+      // ignore
+    } finally {
+      setEditingFolderId(null);
+    }
+  }
+
+  async function handleDeleteFolder(id: string) {
+    try {
+      await deleteFolder(id);
+      setFolders((prev) => prev.filter((f) => f.id !== id));
+      setCandidates((prev) => prev.map((c) => (c.folder_id === id ? { ...c, folder_id: null } : c)));
+      if (customFolderFilter === id) setCustomFolderFilter(null);
+    } catch {
+      // ignore
+    }
+  }
+
+  async function handleMoveToFolder(folderId: string | null) {
+    if (!selected) return;
+    setMovingFolder(true);
+    try {
+      const updated = await assignCandidateFolder(selected.id, folderId);
+      setCandidates((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
+      setFolders((prev) =>
+        prev.map((f) => {
+          if (f.id === selected.folder_id) return { ...f, candidate_count: Math.max(0, f.candidate_count - 1) };
+          if (f.id === folderId) return { ...f, candidate_count: f.candidate_count + 1 };
+          return f;
+        })
+      );
+    } catch {
+      // ignore
+    } finally {
+      setMovingFolder(false);
     }
   }
 
@@ -182,17 +286,17 @@ export default function CandidatesPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
-        {/* Automated Folders */}
+        {/* Folders */}
         <article className="rounded-card border border-border bg-surface p-5 shadow-card lg:col-span-3">
           <div className="flex items-center justify-between gap-2">
             <div>
               <h2 className="text-sm font-semibold">Automated Folders</h2>
               <p className="mt-1 text-xs text-text-secondary">Grouped by position &amp; stage</p>
             </div>
-            {folderFilter && (
+            {autoFolderFilter && (
               <button
                 type="button"
-                onClick={() => setFolderFilter(null)}
+                onClick={() => setAutoFolderFilter(null)}
                 className="shrink-0 rounded-pill border border-border px-2 py-1 text-[10px] font-semibold text-text-secondary transition hover:bg-surface-alt"
               >
                 Clear
@@ -210,12 +314,12 @@ export default function CandidatesPage() {
                   {group.position}
                 </div>
                 {group.stages.map((s) => {
-                  const isActive = folderFilter?.position === group.position && folderFilter?.stage === s.stage;
+                  const isActive = autoFolderFilter?.position === group.position && autoFolderFilter?.stage === s.stage;
                   return (
                     <button
                       key={s.stage}
                       type="button"
-                      onClick={() => setFolderFilter(isActive ? null : { position: group.position, stage: s.stage })}
+                      onClick={() => setAutoFolderFilter(isActive ? null : { position: group.position, stage: s.stage })}
                       className={`ml-6 flex w-[calc(100%-1.5rem)] items-center justify-between rounded-control px-2 py-1.5 text-left transition ${
                         isActive ? "bg-accent-soft font-semibold text-accent-hover" : "text-text-secondary hover:bg-surface-alt"
                       }`}
@@ -228,6 +332,99 @@ export default function CandidatesPage() {
               </div>
             ))}
             {!loading && automatedFolders.length === 0 && <p className="px-2 py-4 text-text-muted">No candidates yet.</p>}
+          </div>
+
+          <div className="mt-5 border-t border-border pt-4">
+            <div className="flex items-center justify-between gap-2">
+              <h3 className="text-sm font-semibold">Custom Folders</h3>
+              {customFolderFilter && (
+                <button
+                  type="button"
+                  onClick={() => setCustomFolderFilter(null)}
+                  className="shrink-0 rounded-pill border border-border px-2 py-1 text-[10px] font-semibold text-text-secondary transition hover:bg-surface-alt"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+
+            <div className="mt-2 flex gap-1.5">
+              <input
+                value={newFolderName}
+                onChange={(e) => setNewFolderName(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleCreateFolder()}
+                placeholder="New folder name"
+                className="h-9 min-w-0 flex-1 rounded-control border border-border bg-surface-alt px-2 text-xs text-text-primary placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-accent/30"
+              />
+              <button
+                type="button"
+                onClick={handleCreateFolder}
+                aria-label="Create folder"
+                className="flex size-9 shrink-0 items-center justify-center rounded-control bg-accent text-primary transition hover:bg-accent-hover"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="size-4">
+                  <path d="M12 5v14M5 12h14" strokeLinecap="round" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="mt-2 space-y-1 text-xs">
+              {folders.map((f) => (
+                <div
+                  key={f.id}
+                  className={`group flex items-center gap-1 rounded-control px-2 py-1.5 transition ${
+                    customFolderFilter === f.id ? "bg-accent-soft font-semibold text-accent-hover" : "text-text-secondary hover:bg-surface-alt"
+                  }`}
+                >
+                  {editingFolderId === f.id ? (
+                    <input
+                      autoFocus
+                      value={editingFolderName}
+                      onChange={(e) => setEditingFolderName(e.target.value)}
+                      onBlur={() => handleRenameFolder(f.id)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") handleRenameFolder(f.id);
+                        if (e.key === "Escape") setEditingFolderId(null);
+                      }}
+                      className="h-7 min-w-0 flex-1 rounded border border-primary bg-white px-1.5 text-xs text-text-primary focus:outline-none"
+                    />
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setCustomFolderFilter(customFolderFilter === f.id ? null : f.id)}
+                      className="flex min-w-0 flex-1 items-center justify-between text-left"
+                    >
+                      <span className="truncate">{f.name}</span>
+                      <span className="tabular-nums text-text-muted">{f.candidate_count}</span>
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    aria-label={`Rename ${f.name}`}
+                    onClick={() => {
+                      setEditingFolderId(f.id);
+                      setEditingFolderName(f.name);
+                    }}
+                    className="hidden size-6 shrink-0 items-center justify-center rounded text-text-muted transition hover:bg-surface-alt hover:text-primary group-hover:flex"
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="size-3.5">
+                      <path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
+                    aria-label={`Delete ${f.name}`}
+                    onClick={() => handleDeleteFolder(f.id)}
+                    className="hidden size-6 shrink-0 items-center justify-center rounded text-text-muted transition hover:bg-error/10 hover:text-error group-hover:flex"
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="size-3.5">
+                      <path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" />
+                    </svg>
+                  </button>
+                </div>
+              ))}
+              {folders.length === 0 && <p className="px-2 py-2 text-text-muted">No custom folders yet.</p>}
+            </div>
           </div>
         </article>
 
@@ -250,6 +447,7 @@ export default function CandidatesPage() {
                 {!loading &&
                   filtered.map((c) => {
                     const isSelected = c.id === selectedId;
+                    const customFolder = folders.find((f) => f.id === c.folder_id);
                     return (
                       <tr
                         key={c.id}
@@ -267,9 +465,14 @@ export default function CandidatesPage() {
                             </div>
                             <div className="min-w-0">
                               <div className="font-medium">{c.full_name}</div>
-                              {c.possible_duplicate && (
+                              {c.duplicate_type === "same_position" && (
                                 <span className="inline-flex items-center whitespace-nowrap rounded-pill bg-warning-soft px-1.5 py-0.5 text-[10px] font-medium text-warning">
-                                  Possible Duplicate
+                                  Reapplied · Same Position
+                                </span>
+                              )}
+                              {c.duplicate_type === "different_position" && (
+                                <span className="inline-flex items-center whitespace-nowrap rounded-pill bg-info-soft px-1.5 py-0.5 text-[10px] font-medium text-info">
+                                  Reapplied · Other Position
                                 </span>
                               )}
                             </div>
@@ -281,7 +484,7 @@ export default function CandidatesPage() {
                         <td className="px-4">
                           <StatusBadge status={c.stage ?? ""} />
                         </td>
-                        <td className="px-4 text-xs text-text-muted">/{c.folder_path}</td>
+                        <td className="px-4 text-xs text-text-muted">{customFolder ? customFolder.name : `/${c.folder_path}`}</td>
                       </tr>
                     );
                   })}
@@ -311,30 +514,85 @@ export default function CandidatesPage() {
                 </div>
               </div>
 
+              {selected.duplicate_type && (
+                <p
+                  className={`mt-3 rounded-control px-2.5 py-1.5 text-[11px] font-medium ${
+                    selected.duplicate_type === "same_position" ? "bg-warning-soft text-warning" : "bg-info-soft text-info"
+                  }`}
+                >
+                  {selected.duplicate_type === "same_position"
+                    ? "This person applied for this same position before."
+                    : "This person previously applied for a different position."}
+                </p>
+              )}
+
               <div className="mt-4 space-y-3 text-xs">
                 <div>
                   <div className="font-semibold uppercase tracking-[0.05em] text-text-muted">Contact</div>
-                  <div className="mt-1 text-text-secondary">{selected.email}</div>
-                  <div className="text-text-secondary">{selected.phone}</div>
+                  <div className="mt-1.5 flex gap-1.5">
+                    <a
+                      href={`mailto:${selected.email}`}
+                      aria-label={`Email ${selected.full_name}`}
+                      title={selected.email}
+                      className="flex h-8 flex-1 items-center justify-center gap-1.5 rounded-control border border-border text-text-secondary transition hover:bg-surface-alt hover:text-primary"
+                    >
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="size-3.5 shrink-0">
+                        <path d="M4 6h16v12H4z" />
+                        <path d="m4 7 8 6 8-6" />
+                      </svg>
+                      Email
+                    </a>
+                    <a
+                      href={toWhatsAppLink(selected.phone)}
+                      target="_blank"
+                      rel="noreferrer"
+                      aria-label={`WhatsApp ${selected.full_name}`}
+                      title={selected.phone}
+                      className="flex h-8 flex-1 items-center justify-center gap-1.5 rounded-control border border-border text-text-secondary transition hover:bg-success-soft hover:text-success"
+                    >
+                      <svg viewBox="0 0 24 24" fill="currentColor" className="size-3.5 shrink-0">
+                        <path d="M12 2a10 10 0 0 0-8.5 15.2L2 22l4.9-1.5A10 10 0 1 0 12 2Zm0 18.2a8.1 8.1 0 0 1-4.3-1.2l-.3-.2-3 .9.9-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2Zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1s-.7.8-.9 1c-.2.2-.3.2-.6.1a6.6 6.6 0 0 1-3.3-2.9c-.2-.4.2-.4.5-1.2.1-.1.1-.3 0-.4-.1-.1-.6-1.4-.8-1.9-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.5.1-.7.3-.2.2-.9.9-.9 2.3s1 2.7 1.1 2.9c.1.2 2 3 4.8 4.2.7.3 1.2.5 1.6.6.7.2 1.3.2 1.8.1.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.5-.3Z" />
+                      </svg>
+                      WhatsApp
+                    </a>
+                  </div>
                 </div>
+
                 <div>
                   <div className="font-semibold uppercase tracking-[0.05em] text-text-muted">CV Document</div>
-                  <a
-                    href={selected.cv_file_url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="mt-1 flex items-center gap-2 rounded-control border border-border px-2 py-1.5 text-text-secondary transition hover:bg-surface-alt hover:text-primary"
+                  <button
+                    type="button"
+                    onClick={() => setCvModalOpen(true)}
+                    className="mt-1 flex w-full items-center gap-2 rounded-control border border-border px-2 py-1.5 text-left text-text-secondary transition hover:bg-surface-alt hover:text-primary"
                   >
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="size-4 shrink-0">
                       <path d="M6 3h9l5 5v13H6z" />
                       <path d="M15 3v5h5" />
                     </svg>
                     <span className="truncate">{fileNameOf(selected.cv_file_url)}</span>
-                  </a>
+                  </button>
                 </div>
+
                 <div>
-                  <div className="font-semibold uppercase tracking-[0.05em] text-text-muted">Folder Path</div>
+                  <div className="font-semibold uppercase tracking-[0.05em] text-text-muted">Automated Folder</div>
                   <div className="mt-1 truncate text-text-secondary">/{selected.folder_path}</div>
+                </div>
+
+                <div>
+                  <label className="font-semibold uppercase tracking-[0.05em] text-text-muted">Custom Folder</label>
+                  <select
+                    value={selected.folder_id ?? ""}
+                    disabled={movingFolder}
+                    onChange={(e) => handleMoveToFolder(e.target.value || null)}
+                    className="mt-1 h-9 w-full rounded-control border border-border bg-surface-alt px-2 text-xs text-text-primary focus:border-primary focus:outline-none focus:ring-2 focus:ring-accent/30"
+                  >
+                    <option value="">Unassigned</option>
+                    {folders.map((f) => (
+                      <option key={f.id} value={f.id}>
+                        {f.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
             </>
@@ -343,6 +601,58 @@ export default function CandidatesPage() {
           )}
         </article>
       </div>
+
+      {cvModalOpen && selected && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-primary/40 backdrop-blur-[1px]" onClick={() => setCvModalOpen(false)} aria-hidden />
+          <div role="dialog" aria-modal="true" aria-label={`${selected.full_name} CV`} className="relative flex h-full max-h-[85vh] w-full max-w-3xl flex-col rounded-card bg-white shadow-2xl">
+            <div className="flex items-center justify-between border-b border-border px-5 py-4">
+              <div>
+                <h2 className="text-sm font-semibold text-text-primary">{selected.full_name} — CV</h2>
+                <p className="text-xs text-text-secondary">{fileNameOf(selected.cv_file_url)}</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <a
+                  href={resolveFileUrl(selected.cv_file_url)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex h-9 items-center gap-1.5 rounded-control border border-border px-3 text-xs font-semibold text-text-secondary transition hover:bg-surface-alt"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="size-3.5">
+                    <path d="m7 17 10-10M8 7h9v9" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                  Open in new tab
+                </a>
+                <button
+                  type="button"
+                  onClick={() => setCvModalOpen(false)}
+                  aria-label="Close"
+                  className="grid size-9 place-items-center rounded-control text-text-muted transition hover:bg-surface-alt hover:text-text-primary"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="size-4">
+                    <path d="m6 6 12 12M18 6 6 18" strokeLinecap="round" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+            <div className="min-h-0 flex-1 bg-surface-alt p-2">
+              {isPdf(selected.cv_file_url) ? (
+                <iframe src={resolveFileUrl(selected.cv_file_url)} title={`${selected.full_name} CV`} className="size-full rounded-control border border-border bg-white" />
+              ) : (
+                <div className="flex size-full flex-col items-center justify-center gap-2 text-center text-xs text-text-secondary">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="size-8 text-text-muted">
+                    <path d="M6 3h9l5 5v13H6z" />
+                    <path d="M15 3v5h5" />
+                  </svg>
+                  Preview isn&apos;t available for this file type.
+                  <br />
+                  Use &quot;Open in new tab&quot; to view it.
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       <SlideOver open={open} onClose={() => setOpen(false)} title="Add Candidate" description="FR-01.2 automated foldering runs on submit.">
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -418,12 +728,12 @@ export default function CandidatesPage() {
             </div>
           </div>
           <div>
-            <label className="mb-1.5 block text-xs font-semibold text-text-secondary">CV URL (optional)</label>
+            <label className="mb-1.5 block text-xs font-semibold text-text-secondary">CV File (PDF/DOC, optional)</label>
             <input
-              value={form.cv_file_url}
-              onChange={(e) => setForm({ ...form, cv_file_url: e.target.value })}
-              placeholder="https://..."
-              className="h-10 w-full rounded-control border border-border bg-surface-alt px-3 text-sm text-text-primary placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-accent/30"
+              type="file"
+              accept=".pdf,.doc,.docx"
+              onChange={handleFileChange}
+              className="block w-full text-xs text-text-secondary file:mr-3 file:h-9 file:rounded-control file:border-0 file:bg-accent-soft file:px-3 file:text-xs file:font-semibold file:text-accent-hover hover:file:bg-accent/20"
             />
           </div>
 
