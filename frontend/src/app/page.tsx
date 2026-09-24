@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { StatusBadge } from "@/components/StatusBadge";
+import { SkeletonRows } from "@/components/SkeletonRows";
 import { approveRequisition, listRequisitions, searchCandidates, type Candidate, type Requisition } from "@/lib/api";
 import { toWhatsAppLink } from "@/lib/contact";
 import { groupByPositionStage } from "@/lib/folders";
@@ -138,7 +139,11 @@ export default function OverviewPage() {
           </div>
 
           <div className="mt-5 flex items-end gap-2">
-            <span className="text-3xl font-bold tabular-nums">{totalOpen}</span>
+            {loading ? (
+              <span className="h-8 w-12 animate-pulse rounded bg-surface-alt" />
+            ) : (
+              <span className="text-3xl font-bold tabular-nums">{totalOpen}</span>
+            )}
             <span className="mb-1 text-xs text-text-secondary">Open Requisitions</span>
           </div>
 
@@ -183,7 +188,18 @@ export default function OverviewPage() {
           </div>
 
           <div className="mt-4 space-y-3">
-            {requisitions.slice(0, 5).map((r) => (
+            {loading &&
+              Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-3">
+                  <div className="size-8 shrink-0 animate-pulse rounded-full bg-surface-alt" />
+                  <div className="min-w-0 flex-1 space-y-1.5">
+                    <div className="h-3 w-2/3 animate-pulse rounded bg-surface-alt" />
+                    <div className="h-2.5 w-1/2 animate-pulse rounded bg-surface-alt" />
+                  </div>
+                </div>
+              ))}
+            {!loading &&
+              requisitions.slice(0, 5).map((r) => (
               <div key={r.id} className="flex items-center gap-3">
                 <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary">
                   {initialsOf(r.position_title)}
@@ -247,7 +263,11 @@ export default function OverviewPage() {
           </div>
 
           <div className="mt-4">
-            <div className="text-3xl font-bold tabular-nums">{latestIntake.value}</div>
+            {loading ? (
+              <div className="h-8 w-10 animate-pulse rounded bg-surface-alt" />
+            ) : (
+              <div className="text-3xl font-bold tabular-nums">{latestIntake.value}</div>
+            )}
             <div className="mt-1 text-xs text-success">+18% vs. previous month</div>
           </div>
 
@@ -304,7 +324,11 @@ export default function OverviewPage() {
               ))}
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-3xl font-bold tabular-nums">{activeCandidates.length}</span>
+              {loading ? (
+                <span className="h-8 w-8 animate-pulse rounded bg-surface-alt" />
+              ) : (
+                <span className="text-3xl font-bold tabular-nums">{activeCandidates.length}</span>
+              )}
               <span className="text-xs text-text-secondary">Candidates</span>
             </div>
           </div>
@@ -346,7 +370,9 @@ export default function OverviewPage() {
                 </tr>
               </thead>
               <tbody className="text-xs">
-                {candidates.slice(0, 5).map((c) => (
+                {loading && <SkeletonRows columns={5} rows={5} />}
+                {!loading &&
+                  candidates.slice(0, 5).map((c) => (
                   <tr key={c.id} className="h-[52px] border-t border-border">
                     <td className="px-3">
                       <div className="flex items-center gap-2">
@@ -421,7 +447,15 @@ export default function OverviewPage() {
           </div>
 
           <div className="mt-4 space-y-1 text-xs">
-            {automatedFolders.map((group) => (
+            {loading &&
+              Array.from({ length: 2 }).map((_, i) => (
+                <div key={i} className="space-y-1.5 py-2">
+                  <div className="h-3 w-1/2 animate-pulse rounded bg-surface-alt" />
+                  <div className="ml-6 h-2.5 w-1/3 animate-pulse rounded bg-surface-alt" />
+                </div>
+              ))}
+            {!loading &&
+              automatedFolders.map((group) => (
               <div key={group.position}>
                 <div className="mt-2 flex items-center gap-2 font-semibold text-text-primary first:mt-0">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="size-4 text-primary">
