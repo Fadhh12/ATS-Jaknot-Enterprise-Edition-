@@ -1,12 +1,16 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from app.db.base import Base
 from app.db.seed import seed
 from app.db.session import SessionLocal, engine
 from app.modules.auth.router import router as auth_router
 from app.modules.candidates.router import router as candidates_router
+from app.modules.folders.router import router as folders_router
 from app.modules.requisitions.router import router as requisitions_router
+from app.modules.uploads.router import UPLOAD_ROOT
+from app.modules.uploads.router import router as uploads_router
 
 app = FastAPI(title="Jaknot ATS API", version="1.0.0")
 
@@ -26,6 +30,9 @@ app.add_middleware(
 app.include_router(auth_router)
 app.include_router(requisitions_router)
 app.include_router(candidates_router)
+app.include_router(folders_router)
+app.include_router(uploads_router)
+app.mount("/uploads", StaticFiles(directory=UPLOAD_ROOT), name="uploads")
 
 
 @app.on_event("startup")
