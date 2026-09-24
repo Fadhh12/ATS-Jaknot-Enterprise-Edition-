@@ -490,8 +490,12 @@ export default function CandidatesPage() {
                   })}
                 {!loading && filtered.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="px-4 py-10 text-center text-text-muted">
-                      No candidates match this filter.
+                    <td colSpan={6} className="px-4 py-14 text-center text-text-muted">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="mx-auto size-8 text-text-muted/60">
+                        <circle cx="9" cy="8" r="3" />
+                        <path d="M3 20a6 6 0 0 1 12 0M15 7.5a3 3 0 1 1 3 3M17 14a4 4 0 0 1 4 4" strokeLinecap="round" />
+                      </svg>
+                      <p className="mt-2 text-sm">No candidates match this filter.</p>
                     </td>
                   </tr>
                 )}

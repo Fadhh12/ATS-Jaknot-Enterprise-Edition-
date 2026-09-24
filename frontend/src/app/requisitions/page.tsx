@@ -236,8 +236,12 @@ export default function RequisitionsPage() {
               ))}
             {!loading && filtered.length === 0 && (
               <tr>
-                <td colSpan={9} className="px-4 py-10 text-center text-text-muted">
-                  No requisitions match this filter.
+                <td colSpan={9} className="px-4 py-14 text-center text-text-muted">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="mx-auto size-8 text-text-muted/60">
+                    <path d="M4 6h16M4 12h10M4 18h14" strokeLinecap="round" />
+                    <circle cx="19" cy="12" r="2" />
+                  </svg>
+                  <p className="mt-2 text-sm">No requisitions match this filter.</p>
                 </td>
               </tr>
             )}
