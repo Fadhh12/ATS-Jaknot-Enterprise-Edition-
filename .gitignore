@@ -19,6 +19,9 @@ build/
 .env.local
 .env.*.local
 
+# Local file uploads (dev storage)
+backend/uploads/
+
 # Editors / OS
 .vscode/
 .idea/
