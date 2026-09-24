@@ -3,6 +3,7 @@ from datetime import datetime
 
 from sqlalchemy.orm import Session
 
+from app.modules.auth.models import User
 from app.modules.requisitions.models import JobRequisition, RequisitionApproval
 from app.modules.requisitions.schemas import RequisitionCreate
 
@@ -10,8 +11,37 @@ from app.modules.requisitions.schemas import RequisitionCreate
 APPROVAL_CHAIN_ROLES = ["hiring_manager", "hr_manager", "management"]
 
 
+def _attach_names(db: Session, reqs: list[JobRequisition]) -> list[JobRequisition]:
+    if not reqs:
+        return reqs
+
+    creator_ids = {r.created_by for r in reqs}
+    creators = {u.id: u.name for u in db.query(User).filter(User.id.in_(creator_ids)).all()}
+
+    req_ids = [r.id for r in reqs]
+    decided = (
+        db.query(RequisitionApproval)
+        .filter(RequisitionApproval.requisition_id.in_(req_ids), RequisitionApproval.decision != "Pending")
+        .order_by(RequisitionApproval.decided_at.desc())
+        .all()
+    )
+    latest_approver_by_req: dict[uuid.UUID, uuid.UUID] = {}
+    for a in decided:
+        latest_approver_by_req.setdefault(a.requisition_id, a.approver_id)
+
+    approver_ids = set(latest_approver_by_req.values())
+    approvers = {u.id: u.name for u in db.query(User).filter(User.id.in_(approver_ids)).all()} if approver_ids else {}
+
+    for r in reqs:
+        r.created_by_name = creators.get(r.created_by, "—")
+        approver_id = latest_approver_by_req.get(r.id)
+        r.approved_by_name = approvers.get(approver_id) if approver_id else None
+    return reqs
+
+
 def list_requisitions(db: Session) -> list[JobRequisition]:
-    return db.query(JobRequisition).order_by(JobRequisition.created_at.desc()).all()
+    reqs = db.query(JobRequisition).order_by(JobRequisition.created_at.desc()).all()
+    return _attach_names(db, reqs)
 
 
 def create_requisition(db: Session, payload: RequisitionCreate, created_by: uuid.UUID) -> JobRequisition:
@@ -24,7 +54,7 @@ def create_requisition(db: Session, payload: RequisitionCreate, created_by: uuid
 
     db.commit()
     db.refresh(requisition)
-    return requisition
+    return _attach_names(db, [requisition])[0]
 
 
 def decide_approval(
@@ -43,7 +73,7 @@ def decide_approval(
         .first()
     )
     if step is None:
-        return requisition
+        return _attach_names(db, [requisition])[0]
 
     step.approver_id = approver_id
     step.decision = decision
@@ -62,4 +92,4 @@ def decide_approval(
 
     db.commit()
     db.refresh(requisition)
-    return requisition
+    return _attach_names(db, [requisition])[0]

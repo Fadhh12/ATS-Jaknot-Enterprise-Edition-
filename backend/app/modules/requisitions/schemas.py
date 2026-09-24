@@ -21,6 +21,8 @@ class RequisitionOut(BaseModel):
     budget_range: str
     status: str
     created_by: uuid.UUID
+    created_by_name: str
+    approved_by_name: str | None = None
     created_at: datetime
 
     model_config = {"from_attributes": True}
