@@ -13,6 +13,8 @@ export const dummyRequisitions: Requisition[] = [
     budget_range: "Rp8M–Rp10M",
     status: "Pending Approval",
     created_by: "Rizky",
+    created_by_name: "Rizky",
+    approved_by_name: null,
     created_at: "2026-09-21T08:00:00Z",
   },
   {
@@ -24,6 +26,8 @@ export const dummyRequisitions: Requisition[] = [
     budget_range: "Rp6M–Rp8M",
     status: "Approved",
     created_by: "Nabil",
+    created_by_name: "Nabil",
+    approved_by_name: "Nabil",
     created_at: "2026-09-20T08:00:00Z",
   },
   {
@@ -35,6 +39,8 @@ export const dummyRequisitions: Requisition[] = [
     budget_range: "Rp7M–Rp9M",
     status: "Draft",
     created_by: "Alya",
+    created_by_name: "Alya",
+    approved_by_name: null,
     created_at: "2026-09-19T08:00:00Z",
   },
   {
@@ -46,6 +52,8 @@ export const dummyRequisitions: Requisition[] = [
     budget_range: "Rp4.5M–Rp5.5M",
     status: "Approved",
     created_by: "Dimas",
+    created_by_name: "Dimas",
+    approved_by_name: "Nabil",
     created_at: "2026-09-18T08:00:00Z",
   },
 ];
@@ -62,7 +70,8 @@ export const dummyCandidates: Candidate[] = [
     applied_at: "2026-09-21T00:00:00Z",
     phone: "+62 812-3456-7890",
     cv_file_url: "https://storage.local/cv/Aisyah_Putri_CV.pdf",
-    possible_duplicate: false,
+    duplicate_type: null,
+    folder_id: null,
   },
   {
     id: "cand-rizky",
@@ -75,7 +84,8 @@ export const dummyCandidates: Candidate[] = [
     applied_at: "2026-09-20T00:00:00Z",
     phone: "+62 813-2211-4590",
     cv_file_url: "https://storage.local/cv/Rizky_Pratama_CV.pdf",
-    possible_duplicate: false,
+    duplicate_type: "same_position",
+    folder_id: null,
   },
   {
     id: "cand-dina",
@@ -88,7 +98,8 @@ export const dummyCandidates: Candidate[] = [
     applied_at: "2026-09-19T00:00:00Z",
     phone: "+62 811-7788-2200",
     cv_file_url: "https://storage.local/cv/Dina_Sari_CV.pdf",
-    possible_duplicate: false,
+    duplicate_type: null,
+    folder_id: null,
   },
   {
     id: "cand-fajar",
@@ -101,7 +112,8 @@ export const dummyCandidates: Candidate[] = [
     applied_at: "2026-09-18T00:00:00Z",
     phone: "+62 817-4433-9021",
     cv_file_url: "https://storage.local/cv/Fajar_Adi_CV.pdf",
-    possible_duplicate: false,
+    duplicate_type: "different_position",
+    folder_id: null,
   },
   {
     id: "cand-nadia",
@@ -114,20 +126,8 @@ export const dummyCandidates: Candidate[] = [
     applied_at: "2026-09-17T00:00:00Z",
     phone: "+62 815-6690-3312",
     cv_file_url: "https://storage.local/cv/Nadia_Wulan_CV.pdf",
-    possible_duplicate: false,
-  },
-  {
-    id: "cand-raka",
-    full_name: "Raka Kurnia",
-    email: "raka@candidate.test",
-    applicant_type: "Full-time",
-    position_title: "Graphic Designer",
-    stage: "Applied",
-    folder_path: "Graphic Designer/Applied",
-    applied_at: "2026-09-16T00:00:00Z",
-    phone: "+62 819-2245-6610",
-    cv_file_url: "https://storage.local/cv/Raka_Kurnia_CV.pdf",
-    possible_duplicate: true,
+    duplicate_type: null,
+    folder_id: null,
   },
 ];
 

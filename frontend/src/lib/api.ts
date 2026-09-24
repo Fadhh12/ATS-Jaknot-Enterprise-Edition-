@@ -1,4 +1,4 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 const TOKEN_KEY = "jaknot_token";
 
 export type Requisition = {
@@ -10,8 +10,12 @@ export type Requisition = {
   budget_range: string;
   status: string;
   created_by?: string;
+  created_by_name: string;
+  approved_by_name: string | null;
   created_at: string;
 };
+
+export type DuplicateType = "same_position" | "different_position" | null;
 
 export type Candidate = {
   id: string;
@@ -22,9 +26,18 @@ export type Candidate = {
   position_title: string;
   stage: string;
   applicant_type: string;
-  possible_duplicate: boolean;
+  duplicate_type: DuplicateType;
   folder_path: string;
+  folder_id: string | null;
   applied_at: string;
+};
+
+export type Folder = {
+  id: string;
+  name: string;
+  created_by: string;
+  created_at: string;
+  candidate_count: number;
 };
 
 export type CurrentUser = {
@@ -55,13 +68,19 @@ export function clearToken() {
   window.localStorage.removeItem(TOKEN_KEY);
 }
 
+/** Resolves a backend-relative file path (e.g. "/uploads/cv/x.pdf") to a full URL. */
+export function resolveFileUrl(url: string): string {
+  return /^https?:\/\//i.test(url) ? url : `${API_BASE_URL}${url}`;
+}
+
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const token = getToken();
+  const isFormData = typeof FormData !== "undefined" && options.body instanceof FormData;
   const res = await fetch(`${API_BASE_URL}${path}`, {
     ...options,
     cache: "no-store",
     headers: {
-      ...(options.body ? { "Content-Type": "application/json" } : {}),
+      ...(options.body && !isFormData ? { "Content-Type": "application/json" } : {}),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...options.headers,
     },
@@ -127,4 +146,38 @@ export const intakeCandidate = (payload: {
   request<Candidate>("/api/v1/candidates/intake", {
     method: "POST",
     body: JSON.stringify(payload),
+  });
+
+export const assignCandidateFolder = (candidateId: string, folderId: string | null) =>
+  request<Candidate>(`/api/v1/candidates/${candidateId}/folder`, {
+    method: "PATCH",
+    body: JSON.stringify({ folder_id: folderId }),
+  });
+
+export const uploadCv = (file: File) => {
+  const form = new FormData();
+  form.append("file", file);
+  return request<{ url: string; filename: string }>("/api/v1/uploads/cv", {
+    method: "POST",
+    body: form,
+  });
+};
+
+export const listFolders = () => request<Folder[]>("/api/v1/folders");
+
+export const createFolder = (name: string) =>
+  request<Folder>("/api/v1/folders", {
+    method: "POST",
+    body: JSON.stringify({ name }),
+  });
+
+export const renameFolder = (id: string, name: string) =>
+  request<Folder>(`/api/v1/folders/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify({ name }),
+  });
+
+export const deleteFolder = (id: string) =>
+  request<void>(`/api/v1/folders/${id}`, {
+    method: "DELETE",
   });
