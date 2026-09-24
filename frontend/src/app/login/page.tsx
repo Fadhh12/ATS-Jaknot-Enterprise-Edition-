@@ -27,7 +27,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-dvh items-center justify-center bg-surface-alt px-4 py-10">
+    <div className="bg-grain flex min-h-dvh items-center justify-center bg-surface-alt px-4 py-10">
       <div className="w-full max-w-sm rounded-card border border-border bg-surface p-6 shadow-card sm:p-8">
         <div className="flex flex-col items-center gap-2 text-center">
           <JaknotMark size={44} />
