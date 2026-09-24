@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { StatusBadge } from "@/components/StatusBadge";
 import { approveRequisition, listRequisitions, searchCandidates, type Candidate, type Requisition } from "@/lib/api";
+import { toWhatsAppLink } from "@/lib/contact";
 import { groupByPositionStage } from "@/lib/folders";
 import {
   candidateIntakeMonths,
@@ -61,19 +62,21 @@ export default function OverviewPage() {
   }, [requisitions]);
   const totalOpen = requisitions.length;
 
-  const pendingApprovals = useMemo(() => requisitions.filter((r) => r.status === "Pending Approval").slice(0, 4), [requisitions]);
+  // "Candidates" means people still in the active pipeline — once hired
+  // they're an employee, not a candidate anymore, so exclude that stage.
+  const activeCandidates = useMemo(() => candidates.filter((c) => c.stage !== "Hired"), [candidates]);
 
   const composition = useMemo(() => {
-    const total = candidates.length || 1;
-    const fullTime = candidates.filter((c) => c.applicant_type === "Full-time").length;
-    const daily = candidates.filter((c) => c.applicant_type === "Daily Worker").length;
-    const other = candidates.length - fullTime - daily;
+    const total = activeCandidates.length || 1;
+    const fullTime = activeCandidates.filter((c) => c.applicant_type === "Full-time").length;
+    const daily = activeCandidates.filter((c) => c.applicant_type === "Daily Worker").length;
+    const other = activeCandidates.length - fullTime - daily;
     return [
       { label: "Full-time", pct: Math.round((fullTime / total) * 100) },
       { label: "Daily Worker", pct: Math.round((daily / total) * 100) },
       { label: "Other", pct: Math.round((other / total) * 100) },
     ];
-  }, [candidates]);
+  }, [activeCandidates]);
 
   const donutSegments = useMemo(() => {
     const circumference = 2 * Math.PI * 56;
@@ -161,7 +164,7 @@ export default function OverviewPage() {
           </div>
         </article>
 
-        {/* Recent Requisitions */}
+        {/* Recent Requisitions — also carries approve/reject so there's one place for it */}
         <article className="rounded-card border border-border bg-surface p-5 shadow-card transition hover:-translate-y-0.5 hover:shadow-raised lg:col-span-4">
           <div className="flex items-start justify-between">
             <div>
@@ -180,18 +183,45 @@ export default function OverviewPage() {
           </div>
 
           <div className="mt-4 space-y-3">
-            {requisitions.slice(0, 4).map((r) => (
+            {requisitions.slice(0, 5).map((r) => (
               <div key={r.id} className="flex items-center gap-3">
                 <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary">
                   {initialsOf(r.position_title)}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className="truncate text-sm font-semibold">{r.position_title}</div>
-                  <div className="text-[11px] text-text-secondary">
-                    {r.department_id} · Qty {r.quantity}
+                  <div className="truncate text-sm font-semibold">
+                    {r.position_title} <span className="text-text-secondary">({r.quantity})</span>
                   </div>
+                  <div className="truncate text-[11px] text-text-secondary">Requested by {r.created_by_name}</div>
                 </div>
-                <StatusBadge status={r.status} />
+                {r.status === "Pending Approval" ? (
+                  <div className="flex shrink-0 gap-1.5">
+                    <button
+                      type="button"
+                      disabled={actingId === r.id}
+                      aria-label={`Reject ${r.position_title}`}
+                      onClick={() => handleDecision(r.id, "Rejected")}
+                      className="flex size-8 items-center justify-center rounded-control border border-error/30 bg-white text-error transition hover:bg-error/10 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="size-4">
+                        <path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" />
+                      </svg>
+                    </button>
+                    <button
+                      type="button"
+                      disabled={actingId === r.id}
+                      aria-label={`Approve ${r.position_title}`}
+                      onClick={() => handleDecision(r.id, "Approved")}
+                      className="flex size-8 items-center justify-center rounded-control border border-success/30 bg-white text-success transition hover:bg-success/10 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="size-4">
+                        <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </button>
+                  </div>
+                ) : (
+                  <StatusBadge status={r.status} />
+                )}
               </div>
             ))}
             {!loading && requisitions.length === 0 && <p className="text-xs text-text-muted">No requisitions yet.</p>}
@@ -205,9 +235,15 @@ export default function OverviewPage() {
               <h2 className="text-sm font-semibold">Candidate Intake</h2>
               <p className="mt-1 text-xs text-text-secondary">New candidates this month</p>
             </div>
-            <select className="h-9 rounded-control border border-border bg-surface-alt px-2 text-xs text-text-secondary focus:border-primary focus:outline-none focus:ring-2 focus:ring-accent/30">
-              <option>Monthly</option>
-            </select>
+            <Link
+              href="/candidates"
+              aria-label="Open candidate database"
+              className="flex size-9 items-center justify-center rounded-control bg-accent-soft text-accent transition hover:bg-accent/20"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="size-4">
+                <path d="m7 17 10-10M8 7h9v9" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </Link>
           </div>
 
           <div className="mt-4">
@@ -233,9 +269,20 @@ export default function OverviewPage() {
 
         {/* Total Candidates */}
         <article className="rounded-card border border-border bg-surface p-5 shadow-card transition hover:-translate-y-0.5 hover:shadow-raised lg:col-span-4">
-          <div>
-            <h2 className="text-sm font-semibold">Total Candidates</h2>
-            <p className="mt-1 text-xs text-text-secondary">Centralized candidate database</p>
+          <div className="flex items-start justify-between">
+            <div>
+              <h2 className="text-sm font-semibold">Total Candidates</h2>
+              <p className="mt-1 text-xs text-text-secondary">Active pipeline — excludes Hired</p>
+            </div>
+            <Link
+              href="/candidates"
+              aria-label="Open candidate database"
+              className="flex size-9 items-center justify-center rounded-control bg-accent-soft text-accent transition hover:bg-accent/20"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="size-4">
+                <path d="m7 17 10-10M8 7h9v9" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </Link>
           </div>
 
           <div className="relative mx-auto mt-5 size-44">
@@ -257,7 +304,7 @@ export default function OverviewPage() {
               ))}
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-3xl font-bold tabular-nums">{candidates.length}</span>
+              <span className="text-3xl font-bold tabular-nums">{activeCandidates.length}</span>
               <span className="text-xs text-text-secondary">Candidates</span>
             </div>
           </div>
@@ -276,7 +323,7 @@ export default function OverviewPage() {
         </article>
 
         {/* Candidate Database */}
-        <article className="rounded-card border border-border bg-surface p-5 shadow-card transition hover:-translate-y-0.5 hover:shadow-raised lg:col-span-5">
+        <article className="rounded-card border border-border bg-surface p-5 shadow-card transition hover:-translate-y-0.5 hover:shadow-raised lg:col-span-8">
           <div className="flex items-start justify-between gap-4">
             <div>
               <h2 className="text-sm font-semibold">Candidate Database</h2>
@@ -293,6 +340,7 @@ export default function OverviewPage() {
                 <tr className="h-11 bg-surface-alt text-[11px] font-semibold text-text-secondary">
                   <th className="px-3 font-semibold">Candidate</th>
                   <th className="px-3 font-semibold">Type</th>
+                  <th className="px-3 font-semibold">Contact</th>
                   <th className="px-3 font-semibold">Applied</th>
                   <th className="px-3 font-semibold">Stage</th>
                 </tr>
@@ -305,13 +353,37 @@ export default function OverviewPage() {
                         <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-semibold text-primary">
                           {initialsOf(c.full_name)}
                         </div>
-                        <div>
-                          <div className="font-medium">{c.full_name}</div>
-                          <div className="text-[10px] text-text-muted">{c.email}</div>
-                        </div>
+                        <div className="font-medium">{c.full_name}</div>
                       </div>
                     </td>
                     <td className="px-3">{c.applicant_type}</td>
+                    <td className="px-3">
+                      <div className="flex items-center gap-1.5">
+                        <a
+                          href={`mailto:${c.email}`}
+                          aria-label={`Email ${c.full_name}`}
+                          title={c.email}
+                          className="flex size-7 items-center justify-center rounded-control border border-border text-text-secondary transition hover:bg-surface-alt hover:text-primary"
+                        >
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="size-3.5">
+                            <path d="M4 6h16v12H4z" />
+                            <path d="m4 7 8 6 8-6" />
+                          </svg>
+                        </a>
+                        <a
+                          href={toWhatsAppLink(c.phone)}
+                          target="_blank"
+                          rel="noreferrer"
+                          aria-label={`WhatsApp ${c.full_name}`}
+                          title={c.phone}
+                          className="flex size-7 items-center justify-center rounded-control border border-border text-text-secondary transition hover:bg-success-soft hover:text-success"
+                        >
+                          <svg viewBox="0 0 24 24" fill="currentColor" className="size-3.5">
+                            <path d="M12 2a10 10 0 0 0-8.5 15.2L2 22l4.9-1.5A10 10 0 1 0 12 2Zm0 18.2a8.1 8.1 0 0 1-4.3-1.2l-.3-.2-3 .9.9-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2Zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1s-.7.8-.9 1c-.2.2-.3.2-.6.1a6.6 6.6 0 0 1-3.3-2.9c-.2-.4.2-.4.5-1.2.1-.1.1-.3 0-.4-.1-.1-.6-1.4-.8-1.9-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.5.1-.7.3-.2.2-.9.9-.9 2.3s1 2.7 1.1 2.9c.1.2 2 3 4.8 4.2.7.3 1.2.5 1.6.6.7.2 1.3.2 1.8.1.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.5-.3Z" />
+                          </svg>
+                        </a>
+                      </div>
+                    </td>
                     <td className="px-3 tabular-nums">{dateFormatter.format(new Date(c.applied_at))}</td>
                     <td className="px-3">
                       <StatusBadge status={c.stage ?? ""} />
@@ -320,57 +392,13 @@ export default function OverviewPage() {
                 ))}
                 {!loading && candidates.length === 0 && (
                   <tr>
-                    <td colSpan={4} className="px-3 py-6 text-center text-text-muted">
+                    <td colSpan={5} className="px-3 py-6 text-center text-text-muted">
                       No candidates yet.
                     </td>
                   </tr>
                 )}
               </tbody>
             </table>
-          </div>
-        </article>
-
-        {/* Approval Requests */}
-        <article className="rounded-card border border-border bg-surface p-5 shadow-card transition hover:-translate-y-0.5 hover:shadow-raised lg:col-span-3">
-          <div>
-            <h2 className="text-sm font-semibold">Approval Requests</h2>
-            <p className="mt-1 text-xs text-text-secondary">Awaiting your decision</p>
-          </div>
-
-          <div className="mt-4 space-y-3">
-            {pendingApprovals.map((item) => (
-              <div key={item.id} className="flex items-center gap-2 rounded-control border border-border p-2 transition">
-                <div className="min-w-0 flex-1">
-                  <div className="text-xs font-semibold leading-tight">{item.position_title}</div>
-                  <div className="text-[11px] leading-tight text-text-secondary">
-                    {item.department_id} · Qty {item.quantity}
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  disabled={actingId === item.id}
-                  aria-label={`Reject ${item.position_title} requisition`}
-                  onClick={() => handleDecision(item.id, "Rejected")}
-                  className="flex size-10 shrink-0 items-center justify-center rounded-control border border-error/30 bg-white text-error transition hover:bg-error/10 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="size-4">
-                    <path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" />
-                  </svg>
-                </button>
-                <button
-                  type="button"
-                  disabled={actingId === item.id}
-                  aria-label={`Approve ${item.position_title} requisition`}
-                  onClick={() => handleDecision(item.id, "Approved")}
-                  className="flex size-10 shrink-0 items-center justify-center rounded-control border border-success/30 bg-white text-success transition hover:bg-success/10 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="size-4">
-                    <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </button>
-              </div>
-            ))}
-            {!loading && pendingApprovals.length === 0 && <p className="text-xs text-text-muted">Nothing pending approval.</p>}
           </div>
         </article>
 
@@ -381,7 +409,15 @@ export default function OverviewPage() {
               <h2 className="text-sm font-semibold">Automated Foldering</h2>
               <p className="mt-1 text-xs text-text-secondary">Auto-sorted by position and stage</p>
             </div>
-            <span className="rounded-pill bg-success-soft px-2.5 py-1 text-[10px] font-medium text-success">Active</span>
+            <Link
+              href="/candidates"
+              aria-label="Open candidate database"
+              className="flex size-9 items-center justify-center rounded-control bg-accent-soft text-accent transition hover:bg-accent/20"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="size-4">
+                <path d="m7 17 10-10M8 7h9v9" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </Link>
           </div>
 
           <div className="mt-4 space-y-1 text-xs">
