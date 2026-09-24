@@ -180,13 +180,15 @@ export default function RequisitionsPage() {
               <th className="px-4 font-semibold">Department</th>
               <th className="px-4 font-semibold">Qty</th>
               <th className="px-4 font-semibold">Budget Range</th>
+              <th className="px-4 font-semibold">Created By</th>
               <th className="px-4 font-semibold">Status</th>
+              <th className="px-4 font-semibold">Approved By</th>
               <th className="px-4 font-semibold">Created</th>
               <th className="px-4 font-semibold">Action</th>
             </tr>
           </thead>
           <tbody className="text-sm">
-            {loading && <SkeletonRows columns={7} />}
+            {loading && <SkeletonRows columns={9} />}
             {!loading &&
               filtered.map((r) => (
                 <tr key={r.id} className="h-[52px] border-t border-border transition hover:bg-surface-alt/60">
@@ -194,9 +196,11 @@ export default function RequisitionsPage() {
                   <td className="px-4 text-text-secondary">{r.department_id}</td>
                   <td className="px-4 tabular-nums">{r.quantity}</td>
                   <td className="px-4 tabular-nums">{r.budget_range ?? "—"}</td>
+                  <td className="px-4 text-text-secondary">{r.created_by_name}</td>
                   <td className="px-4">
                     <StatusBadge status={r.status} />
                   </td>
+                  <td className="px-4 text-text-secondary">{r.approved_by_name ?? "—"}</td>
                   <td className="px-4 tabular-nums text-text-secondary">{dateFormatter.format(new Date(r.created_at))}</td>
                   <td className="px-4">
                     {r.status === "Pending Approval" ? (
@@ -204,18 +208,24 @@ export default function RequisitionsPage() {
                         <button
                           type="button"
                           disabled={actingId === r.id}
-                          onClick={() => handleDecision(r.id, "Approved")}
-                          className="rounded-control border border-success/30 bg-white px-2 py-1 text-xs font-semibold text-success transition hover:bg-success/10 disabled:cursor-not-allowed disabled:opacity-50"
+                          aria-label={`Reject ${r.position_title}`}
+                          onClick={() => handleDecision(r.id, "Rejected")}
+                          className="flex size-8 items-center justify-center rounded-control border border-error/30 bg-white text-error transition hover:bg-error/10 disabled:cursor-not-allowed disabled:opacity-50"
                         >
-                          Approve
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="size-4">
+                            <path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" />
+                          </svg>
                         </button>
                         <button
                           type="button"
                           disabled={actingId === r.id}
-                          onClick={() => handleDecision(r.id, "Rejected")}
-                          className="rounded-control border border-error/30 bg-white px-2 py-1 text-xs font-semibold text-error transition hover:bg-error/10 disabled:cursor-not-allowed disabled:opacity-50"
+                          aria-label={`Approve ${r.position_title}`}
+                          onClick={() => handleDecision(r.id, "Approved")}
+                          className="flex size-8 items-center justify-center rounded-control border border-success/30 bg-white text-success transition hover:bg-success/10 disabled:cursor-not-allowed disabled:opacity-50"
                         >
-                          Reject
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="size-4">
+                            <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
                         </button>
                       </div>
                     ) : (
@@ -226,7 +236,7 @@ export default function RequisitionsPage() {
               ))}
             {!loading && filtered.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-4 py-10 text-center text-text-muted">
+                <td colSpan={9} className="px-4 py-10 text-center text-text-muted">
                   No requisitions match this filter.
                 </td>
               </tr>
