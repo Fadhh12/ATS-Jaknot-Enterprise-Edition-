@@ -39,7 +39,7 @@ export function SlideOver({
         aria-label={title}
         className="relative flex h-full w-full max-w-md flex-col bg-white shadow-2xl animate-[slideIn_220ms_cubic-bezier(0.16,1,0.3,1)]"
       >
-        <div className="flex items-start justify-between border-b border-slate-100 px-6 py-5">
+        <div className="flex items-start justify-between border-b border-border px-6 py-5">
           <div>
             <h2 className="text-lg font-semibold text-text-primary">{title}</h2>
             {description && <p className="mt-1 text-sm text-text-secondary">{description}</p>}
@@ -47,7 +47,7 @@ export function SlideOver({
           <button
             onClick={onClose}
             aria-label="Close"
-            className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 active:scale-95"
+            className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-text-muted transition-colors hover:bg-surface-alt hover:text-text-secondary active:scale-95"
           >
             <svg viewBox="0 0 20 20" fill="none" className="h-4 w-4">
               <path d="m5 5 10 10M15 5 5 15" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
