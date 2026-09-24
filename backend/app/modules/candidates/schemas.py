@@ -1,5 +1,6 @@
 import uuid
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel
 
@@ -23,8 +24,13 @@ class CandidateOut(BaseModel):
     position_title: str
     stage: str
     applicant_type: str
-    possible_duplicate: bool
+    duplicate_type: Literal["same_position", "different_position"] | None
     folder_path: str
+    folder_id: uuid.UUID | None
     applied_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+class CandidateFolderAssign(BaseModel):
+    folder_id: uuid.UUID | None

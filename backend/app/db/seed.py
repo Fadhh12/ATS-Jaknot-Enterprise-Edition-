@@ -72,17 +72,21 @@ def seed(db: Session) -> None:
         )
 
     if db.query(Candidate).count() == 0:
+        # (name, email, phone, position, stage, applicant_type, duplicate_type)
+        # Rizky and Fajar each reapply later under the same email/phone, to
+        # demo both duplicate badges: same position vs. a different one.
         seed_candidates = [
-            ("Aisyah Putri", "aisyah@candidate.test", "+62 812-3456-7890", "Warehouse Supervisor", "Screening", "Full-time", False),
-            ("Rizky Pratama", "rizky@candidate.test", "+62 813-2211-4590", "Warehouse Supervisor", "Applied", "Daily Worker", False),
-            ("Dina Sari", "dina@candidate.test", "+62 811-7788-2200", "Recruitment Admin", "Shortlist", "Full-time", False),
-            ("Fajar Adi", "fajar@candidate.test", "+62 817-4433-9021", "Graphic Designer", "Applied", "Full-time", False),
-            ("Nadia Wulan", "nadia@candidate.test", "+62 815-6690-3312", "Recruitment Admin", "Hired", "Daily Worker", False),
-            ("Raka Kurnia", "raka@candidate.test", "+62 819-2245-6610", "Graphic Designer", "Applied", "Full-time", True),
+            ("Aisyah Putri", "aisyah@candidate.test", "+62 812-3456-7890", "Warehouse Supervisor", "Screening", "Full-time", None),
+            ("Rizky Pratama", "rizky@candidate.test", "+62 813-2211-4590", "Warehouse Supervisor", "Applied", "Daily Worker", None),
+            ("Dina Sari", "dina@candidate.test", "+62 811-7788-2200", "Recruitment Admin", "Shortlist", "Full-time", None),
+            ("Fajar Adi", "fajar@candidate.test", "+62 817-4433-9021", "Graphic Designer", "Applied", "Full-time", None),
+            ("Nadia Wulan", "nadia@candidate.test", "+62 815-6690-3312", "Recruitment Admin", "Hired", "Daily Worker", None),
+            ("Rizky Pratama", "rizky@candidate.test", "+62 813-2211-4590", "Warehouse Supervisor", "Screening", "Daily Worker", "same_position"),
+            ("Fajar Adi", "fajar@candidate.test", "+62 817-4433-9021", "Store Crew", "Applied", "Full-time", "different_position"),
         ]
         now = datetime.utcnow()
-        for i, (name, email, phone, position, stage, applicant_type, dup) in enumerate(seed_candidates):
-            applied_at = now - timedelta(days=i)
+        for i, (name, email, phone, position, stage, applicant_type, duplicate_type) in enumerate(seed_candidates):
+            applied_at = now - timedelta(days=len(seed_candidates) - i)
             db.add(
                 Candidate(
                     full_name=name,
@@ -92,7 +96,7 @@ def seed(db: Session) -> None:
                     position_title=position,
                     stage=stage,
                     applicant_type=applicant_type,
-                    possible_duplicate=dup,
+                    duplicate_type=duplicate_type,
                     folder_path=build_folder_path(position, stage, applied_at),
                     applied_at=applied_at,
                 )
