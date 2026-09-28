@@ -253,7 +253,7 @@ export default function RequisitionsPage() {
         open={open}
         onClose={() => setOpen(false)}
         title="New Requisition"
-        description="Routes through Hiring Manager → HR Manager → Management approval."
+        description="Approved by the Hiring Manager assigned to this position's organization."
       >
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -312,20 +312,11 @@ export default function RequisitionsPage() {
             />
           </div>
           <div>
-            <div className="mb-1.5 text-xs font-semibold text-text-secondary">Approval Steps</div>
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 rounded-control border border-border px-3 py-2 text-xs">
-                <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-white">1</span>
-                Hiring Manager
-              </div>
-              <div className="flex items-center gap-2 rounded-control border border-border px-3 py-2 text-xs">
-                <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-white">2</span>
-                HR Manager
-              </div>
-              <div className="flex items-center gap-2 rounded-control border border-border px-3 py-2 text-xs">
-                <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-white">3</span>
-                Management
-              </div>
+            <div className="mb-1.5 text-xs font-semibold text-text-secondary">Approver</div>
+            <div className="flex items-center gap-2 rounded-control border border-border px-3 py-2 text-xs">
+              <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-white">1</span>
+              Hiring Manager
+              <span className="ml-auto text-[10px] text-text-muted">Auto-assigned</span>
             </div>
           </div>
 
