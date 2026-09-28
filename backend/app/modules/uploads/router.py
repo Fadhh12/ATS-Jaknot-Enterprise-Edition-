@@ -18,7 +18,7 @@ MAX_SIZE_BYTES = 8 * 1024 * 1024
 @router.post("/cv", status_code=status.HTTP_201_CREATED)
 async def upload_cv(
     file: UploadFile = File(...),
-    _user=Depends(require_role("admin", "recruiter", "hiring_manager", "hr_manager", "management")),
+    _user=Depends(require_role("recruiter_primary", "recruiter_admin", "recruiting_administrator")),
 ):
     ext = Path(file.filename or "").suffix.lower()
     if ext not in ALLOWED_EXTENSIONS:

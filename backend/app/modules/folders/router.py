@@ -10,7 +10,7 @@ from app.modules.folders.schemas import FolderCreate, FolderOut, FolderUpdate
 
 router = APIRouter(prefix="/api/v1/folders", tags=["folders"])
 
-ANY_ROLE = ("admin", "recruiter", "hiring_manager", "hr_manager", "management")
+ANY_ROLE = ("recruiter_primary", "recruiter_admin", "hiring_manager", "recruiting_administrator")
 
 
 @router.get("", response_model=list[FolderOut])

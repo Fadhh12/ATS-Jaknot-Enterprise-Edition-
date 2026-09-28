@@ -10,14 +10,14 @@ from app.modules.candidates.schemas import CandidateFolderAssign, CandidateIntak
 
 router = APIRouter(prefix="/api/v1/candidates", tags=["candidates"])
 
-ANY_ROLE = ("admin", "recruiter", "hiring_manager", "management", "hr_manager")
+ANY_ROLE = ("recruiter_primary", "recruiter_admin", "hiring_manager", "recruiting_administrator")
 
 
 @router.post("/intake", response_model=CandidateOut, status_code=201)
 def intake_candidate(
     payload: CandidateIntake,
     db: Session = Depends(get_db),
-    _user=Depends(require_role("recruiter", "admin", "hr_manager")),
+    _user=Depends(require_role("recruiter_primary", "recruiter_admin", "recruiting_administrator")),
 ):
     return service.intake_candidate(db, payload)
 

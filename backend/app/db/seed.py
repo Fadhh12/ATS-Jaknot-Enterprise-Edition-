@@ -10,7 +10,7 @@ from app.core.security import hash_password
 from app.modules.auth.models import User
 from app.modules.candidates.models import Candidate
 from app.modules.candidates.service import build_folder_path
-from app.modules.requisitions.models import JobRequisition
+from app.modules.requisitions.models import JobRequisition, RequisitionApproval
 
 
 def seed(db: Session) -> None:
@@ -20,24 +20,28 @@ def seed(db: Session) -> None:
             name=settings.seed_admin_name,
             email=settings.seed_admin_email,
             password_hash=hash_password(settings.seed_admin_password),
-            role="admin",
+            role="recruiting_administrator",
         )
         db.add(admin)
         db.flush()
 
     if db.query(JobRequisition).count() == 0:
+        pending = JobRequisition(
+            position_title="Warehouse Supervisor",
+            department_id="Warehouse",
+            quantity=2,
+            justification="Backlog in outbound shipments needs a dedicated supervisor.",
+            budget_range="Rp8M-Rp10M",
+            status="Pending Approval",
+            created_by=admin.id,
+            created_at=datetime.utcnow() - timedelta(days=2),
+        )
+        db.add(pending)
+        db.flush()
+        db.add(RequisitionApproval(requisition_id=pending.id, approver_id=admin.id, sequence=1))
+
         db.add_all(
             [
-                JobRequisition(
-                    position_title="Warehouse Supervisor",
-                    department_id="Warehouse",
-                    quantity=2,
-                    justification="Backlog in outbound shipments needs a dedicated supervisor.",
-                    budget_range="Rp8M-Rp10M",
-                    status="Pending Approval",
-                    created_by=admin.id,
-                    created_at=datetime.utcnow() - timedelta(days=2),
-                ),
                 JobRequisition(
                     position_title="Recruitment Admin",
                     department_id="HRGA",

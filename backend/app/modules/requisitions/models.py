@@ -23,7 +23,8 @@ class JobRequisition(Base):
 
 
 class RequisitionApproval(Base):
-    """Tracks each step of the multi-level approval chain (FR-03.2, BR-03)."""
+    """Tracks the requisition's approval step — Hiring Manager decides, with
+    Recruiting Administrator able to override (FR-03.2, BR-03)."""
 
     __tablename__ = "requisition_approvals"
 

@@ -12,7 +12,10 @@ router = APIRouter(prefix="/api/v1/requisitions", tags=["requisitions"])
 
 
 @router.get("", response_model=list[RequisitionOut])
-def list_requisitions(db: Session = Depends(get_db), _user=Depends(require_role("admin", "recruiter", "hiring_manager", "management", "hr_manager"))):
+def list_requisitions(
+    db: Session = Depends(get_db),
+    _user=Depends(require_role("recruiter_primary", "recruiter_admin", "hiring_manager", "recruiting_administrator")),
+):
     return service.list_requisitions(db)
 
 
@@ -20,7 +23,7 @@ def list_requisitions(db: Session = Depends(get_db), _user=Depends(require_role(
 def create_requisition(
     payload: RequisitionCreate,
     db: Session = Depends(get_db),
-    user=Depends(require_role("hiring_manager", "admin")),
+    user=Depends(require_role("recruiter_primary", "recruiting_administrator")),
 ):
     return service.create_requisition(db, payload, created_by=uuid.UUID(user["sub"]))
 
@@ -30,7 +33,7 @@ def approve_requisition(
     requisition_id: uuid.UUID,
     payload: ApprovalDecision,
     db: Session = Depends(get_db),
-    user=Depends(require_role("hr_manager", "management", "admin")),
+    user=Depends(require_role("hiring_manager", "recruiting_administrator")),
 ):
     return service.decide_approval(
         db,

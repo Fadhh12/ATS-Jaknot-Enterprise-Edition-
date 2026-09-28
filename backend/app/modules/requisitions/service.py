@@ -8,7 +8,9 @@ from app.modules.requisitions.models import JobRequisition, RequisitionApproval
 from app.modules.requisitions.schemas import RequisitionCreate
 
 # BR-03: every status change records timestamp, actor, and reason when rejected.
-APPROVAL_CHAIN_ROLES = ["hiring_manager", "hr_manager", "management"]
+# Single-step approval: the Hiring Manager auto-assigned to the requisition's
+# supervisory organization decides; Recruiting Administrator can override.
+APPROVAL_CHAIN_ROLES = ["hiring_manager"]
 
 
 def _attach_names(db: Session, reqs: list[JobRequisition]) -> list[JobRequisition]:
@@ -79,6 +81,7 @@ def decide_approval(
     step.decision = decision
     step.reason = reason
     step.decided_at = datetime.utcnow()
+    db.flush()  # session has autoflush off — the remaining-count query below must see this row's new decision
 
     if decision == "Rejected":
         requisition.status = "Rejected"
