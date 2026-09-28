@@ -13,6 +13,14 @@ from app.modules.candidates.service import build_folder_path
 from app.modules.requisitions.models import JobRequisition, RequisitionApproval
 
 
+# One dev login per role so each can be tried without a separate register call.
+SEED_ROLE_USERS = [
+    ("Rina Recruiter", "rina.recruiter@jaknot-ats.com", "recruiter_primary"),
+    ("Budi Admin", "budi.recruiteradmin@jaknot-ats.com", "recruiter_admin"),
+    ("Hasan Hiring", "hasan.hiringmanager@jaknot-ats.com", "hiring_manager"),
+]
+
+
 def seed(db: Session) -> None:
     admin = db.query(User).filter(User.email == settings.seed_admin_email).first()
     if not admin:
@@ -24,6 +32,17 @@ def seed(db: Session) -> None:
         )
         db.add(admin)
         db.flush()
+
+    for name, email, role in SEED_ROLE_USERS:
+        if not db.query(User).filter(User.email == email).first():
+            db.add(
+                User(
+                    name=name,
+                    email=email,
+                    password_hash=hash_password(settings.seed_admin_password),
+                    role=role,
+                )
+            )
 
     if db.query(JobRequisition).count() == 0:
         pending = JobRequisition(
