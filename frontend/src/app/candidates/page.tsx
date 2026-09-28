@@ -68,6 +68,7 @@ export default function CandidatesPage() {
   const [autoFolderFilter, setAutoFolderFilter] = useState<{ position: string; stage: string } | null>(null);
   const [customFolderFilter, setCustomFolderFilter] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [cvFile, setCvFile] = useState<File | null>(null);
@@ -99,21 +100,20 @@ export default function CandidatesPage() {
   }, []);
 
   useEffect(() => {
-    if (!selectedId && candidates.length) setSelectedId(candidates[0].id);
-  }, [candidates, selectedId]);
-
-  useEffect(() => {
     setCvModalOpen(false);
   }, [selectedId]);
 
   useEffect(() => {
-    if (!cvModalOpen) return;
+    if (!cvModalOpen && !detailOpen) return;
     function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") setCvModalOpen(false);
+      if (e.key !== "Escape") return;
+      // CV preview sits on top of the detail modal — close whichever is frontmost first.
+      if (cvModalOpen) setCvModalOpen(false);
+      else setDetailOpen(false);
     }
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [cvModalOpen]);
+  }, [cvModalOpen, detailOpen]);
 
   const automatedFolders = useMemo(() => groupByPositionStage(candidates), [candidates]);
 
@@ -429,7 +429,7 @@ export default function CandidatesPage() {
         </article>
 
         {/* Candidate Table */}
-        <article className="overflow-hidden rounded-card border border-border bg-surface shadow-card lg:col-span-7">
+        <article className="overflow-hidden rounded-card border border-border bg-surface shadow-card lg:col-span-9">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[640px] text-left">
               <thead>
@@ -452,8 +452,15 @@ export default function CandidatesPage() {
                       <tr
                         key={c.id}
                         tabIndex={0}
-                        onClick={() => setSelectedId(c.id)}
-                        onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && setSelectedId(c.id)}
+                        onClick={() => {
+                          setSelectedId(c.id);
+                          setDetailOpen(true);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key !== "Enter" && e.key !== " ") return;
+                          setSelectedId(c.id);
+                          setDetailOpen(true);
+                        }}
                         className={`h-[52px] cursor-pointer border-t border-border transition ${
                           isSelected ? "bg-accent-soft/60 hover:bg-accent-soft/40" : "hover:bg-surface-alt"
                         }`}
@@ -504,23 +511,43 @@ export default function CandidatesPage() {
           </div>
         </article>
 
-        {/* Candidate Detail */}
-        <article className="rounded-card border border-border bg-surface p-5 shadow-card lg:col-span-2" aria-live="polite">
-          {selected ? (
-            <>
-              <div className="flex items-center gap-3">
+      </div>
+
+      {detailOpen && selected && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-primary/40 backdrop-blur-[1px]" onClick={() => setDetailOpen(false)} aria-hidden />
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label={`${selected.full_name} detail`}
+            className="relative flex max-h-[85vh] w-full max-w-sm flex-col overflow-hidden rounded-card bg-white shadow-2xl"
+          >
+            <div className="flex items-center justify-between border-b border-border px-5 py-4">
+              <div className="flex min-w-0 items-center gap-3">
                 <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
                   {initialsOf(selected.full_name)}
                 </div>
                 <div className="min-w-0">
-                  <div className="truncate text-sm font-semibold">{selected.full_name}</div>
+                  <div className="truncate text-sm font-semibold text-text-primary">{selected.full_name}</div>
                   <div className="text-[11px] text-text-secondary">{selected.position_title}</div>
                 </div>
               </div>
+              <button
+                type="button"
+                onClick={() => setDetailOpen(false)}
+                aria-label="Close"
+                className="grid size-9 shrink-0 place-items-center rounded-control text-text-muted transition hover:bg-surface-alt hover:text-text-primary"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="size-4">
+                  <path d="m6 6 12 12M18 6 6 18" strokeLinecap="round" />
+                </svg>
+              </button>
+            </div>
 
+            <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
               {selected.duplicate_type && (
                 <p
-                  className={`mt-3 rounded-control px-2.5 py-1.5 text-[11px] font-medium ${
+                  className={`mb-4 rounded-control px-2.5 py-1.5 text-[11px] font-medium ${
                     selected.duplicate_type === "same_position" ? "bg-warning-soft text-warning" : "bg-info-soft text-info"
                   }`}
                 >
@@ -530,7 +557,7 @@ export default function CandidatesPage() {
                 </p>
               )}
 
-              <div className="mt-4 space-y-3 text-xs">
+              <div className="space-y-3 text-xs">
                 <div>
                   <div className="font-semibold uppercase tracking-[0.05em] text-text-muted">Contact</div>
                   <div className="mt-1.5 flex gap-1.5">
@@ -597,15 +624,13 @@ export default function CandidatesPage() {
                   </select>
                 </div>
               </div>
-            </>
-          ) : (
-            <p className="text-xs text-text-muted">Select a candidate to see details.</p>
-          )}
-        </article>
-      </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {cvModalOpen && selected && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-primary/40 backdrop-blur-[1px]" onClick={() => setCvModalOpen(false)} aria-hidden />
           <div role="dialog" aria-modal="true" aria-label={`${selected.full_name} CV`} className="relative flex h-full max-h-[85vh] w-full max-w-3xl flex-col rounded-card bg-white shadow-2xl">
             <div className="flex items-center justify-between border-b border-border px-5 py-4">
