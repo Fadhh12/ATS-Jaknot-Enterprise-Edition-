@@ -100,8 +100,8 @@ export default function CandidatesPage() {
   }, []);
 
   useEffect(() => {
-    setCvModalOpen(false);
-  }, [selectedId]);
+    if (new URLSearchParams(window.location.search).get("add") === "1") setOpen(true);
+  }, []);
 
   useEffect(() => {
     if (!cvModalOpen && !detailOpen) return;
@@ -438,7 +438,7 @@ export default function CandidatesPage() {
                   <th className="px-4 font-semibold">Type</th>
                   <th className="px-4 font-semibold">Position</th>
                   <th className="px-4 font-semibold">Applied</th>
-                  <th className="px-4 font-semibold">Stage</th>
+                  <th className="px-4 font-semibold">Quick Actions</th>
                   <th className="px-4 font-semibold">Folder</th>
                 </tr>
               </thead>
@@ -489,7 +489,49 @@ export default function CandidatesPage() {
                         <td className="px-4 text-text-secondary">{c.position_title}</td>
                         <td className="px-4 tabular-nums text-text-secondary">{dateFormatter.format(new Date(c.applied_at))}</td>
                         <td className="px-4">
-                          <StatusBadge status={c.stage ?? ""} />
+                          <div className="flex gap-1.5">
+                            <a
+                              href={`mailto:${c.email}`}
+                              onClick={(e) => e.stopPropagation()}
+                              aria-label={`Email ${c.full_name}`}
+                              title={c.email}
+                              className="flex size-7 items-center justify-center border border-border text-text-secondary transition hover:bg-surface-alt hover:text-primary"
+                            >
+                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="size-3.5 shrink-0">
+                                <path d="M4 6h16v12H4z" />
+                                <path d="m4 7 8 6 8-6" />
+                              </svg>
+                            </a>
+                            <a
+                              href={toWhatsAppLink(c.phone)}
+                              target="_blank"
+                              rel="noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              aria-label={`WhatsApp ${c.full_name}`}
+                              title={c.phone}
+                              className="flex size-7 items-center justify-center border border-border text-text-secondary transition hover:bg-success-soft hover:text-success"
+                            >
+                              <svg viewBox="0 0 24 24" fill="currentColor" className="size-3.5 shrink-0">
+                                <path d="M12 2a10 10 0 0 0-8.5 15.2L2 22l4.9-1.5A10 10 0 1 0 12 2Zm0 18.2a8.1 8.1 0 0 1-4.3-1.2l-.3-.2-3 .9.9-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2Zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1s-.7.8-.9 1c-.2.2-.3.2-.6.1a6.6 6.6 0 0 1-3.3-2.9c-.2-.4.2-.4.5-1.2.1-.1.1-.3 0-.4-.1-.1-.6-1.4-.8-1.9-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.5.1-.7.3-.2.2-.9.9-.9 2.3s1 2.7 1.1 2.9c.1.2 2 3 4.8 4.2.7.3 1.2.5 1.6.6.7.2 1.3.2 1.8.1.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.5-.3Z" />
+                              </svg>
+                            </a>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedId(c.id);
+                                setCvModalOpen(true);
+                              }}
+                              aria-label={`View CV for ${c.full_name}`}
+                              title={fileNameOf(c.cv_file_url)}
+                              className="flex size-7 items-center justify-center border border-border text-text-secondary transition hover:bg-surface-alt hover:text-primary"
+                            >
+                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="size-3.5 shrink-0">
+                                <path d="M6 3h9l5 5v13H6z" />
+                                <path d="M15 3v5h5" />
+                              </svg>
+                            </button>
+                          </div>
                         </td>
                         <td className="px-4 text-xs text-text-muted">{customFolder ? customFolder.name : `/${c.folder_path}`}</td>
                       </tr>
