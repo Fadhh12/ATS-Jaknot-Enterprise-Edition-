@@ -108,15 +108,26 @@ export default function OverviewPage() {
     <div>
       <div className="mb-5 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
         <h1 className="text-2xl font-bold tracking-tight text-text-primary lg:text-3xl">Overview</h1>
-        <Link
-          href="/requisitions"
-          className="inline-flex h-11 items-center justify-center gap-2 rounded-control bg-accent px-5 text-sm font-semibold text-primary transition hover:bg-accent-hover active:scale-[0.98]"
-        >
-          Create Requisition
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="size-4">
-            <path d="M5 12h14M13 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </Link>
+        <div className="flex gap-2">
+          <Link
+            href="/candidates?add=1"
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-control border border-border bg-surface px-5 text-sm font-semibold text-text-primary transition hover:bg-surface-alt active:scale-[0.98]"
+          >
+            Add Candidate
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="size-4">
+              <path d="M12 5v14M5 12h14" strokeLinecap="round" />
+            </svg>
+          </Link>
+          <Link
+            href="/requisitions"
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-control bg-accent px-5 text-sm font-semibold text-primary transition hover:bg-accent-hover active:scale-[0.98]"
+          >
+            Create Requisition
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="size-4">
+              <path d="M5 12h14M13 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </Link>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
