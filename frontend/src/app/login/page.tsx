@@ -72,6 +72,17 @@ export default function LoginPage() {
           )}
 
           <button
+            type="button"
+            onClick={() => {
+              setEmail("nabilbiel12@gmail.com");
+              setPassword("jaknot-dev-2026");
+            }}
+            className="h-11 w-full rounded-control bg-primary text-sm font-semibold text-white transition hover:bg-primary-hover"
+          >
+            Demo Login
+          </button>
+
+          <button
             type="submit"
             disabled={submitting}
             className="h-11 w-full rounded-control bg-accent text-sm font-semibold text-primary transition hover:bg-accent-hover active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
