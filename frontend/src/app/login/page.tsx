@@ -2,12 +2,14 @@
 
 import { useState } from "react";
 import type { FormEvent } from "react";
+import { useRouter } from "next/navigation";
 import { JaknotMark, JaknotWordmark } from "@/components/JaknotLogo";
 import { ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 
 export default function LoginPage() {
   const { login } = useAuth();
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -21,6 +23,27 @@ export default function LoginPage() {
       await login(email, password);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Unable to reach the server. Try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function handleDemoLogin() {
+    const demoEmail = "nabilbiel12@gmail.com";
+    const demoPassword = "jaknot-dev-2026";
+    setEmail(demoEmail);
+    setPassword(demoPassword);
+    setError(null);
+    setSubmitting(true);
+    try {
+      await login(demoEmail, demoPassword);
+    } catch {
+      // Demo mode - show preview UI
+      setError("Demo mode: Showing preview UI (backend not connected)");
+      // Store demo token to access the app
+      localStorage.setItem("demo_mode", "true");
+      localStorage.setItem("demo_email", demoEmail);
+      router.push("/");
     } finally {
       setSubmitting(false);
     }
@@ -73,10 +96,7 @@ export default function LoginPage() {
 
           <button
             type="button"
-            onClick={() => {
-              setEmail("nabilbiel12@gmail.com");
-              setPassword("jaknot-dev-2026");
-            }}
+            onClick={handleDemoLogin}
             className="h-11 w-full rounded-control bg-primary text-sm font-semibold text-white transition hover:bg-primary-hover"
           >
             Demo Login

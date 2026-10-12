@@ -10,19 +10,37 @@ type AuthState = {
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
+  isDemoMode: boolean;
 };
 
 const AuthContext = createContext<AuthState | null>(null);
 
 const PUBLIC_PATHS = new Set(["/login"]);
 
+// Demo user for preview
+const DEMO_USER: CurrentUser = {
+  id: "demo-id",
+  name: "Nabil (Demo)",
+  email: "nabilbiel12@gmail.com",
+  role: "recruiting_administrator",
+};
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<CurrentUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isDemoMode, setIsDemoMode] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
 
   const refresh = useCallback(async () => {
+    // Check for demo mode
+    if (localStorage.getItem("demo_mode") === "true") {
+      setIsDemoMode(true);
+      setUser(DEMO_USER);
+      setLoading(false);
+      return;
+    }
+
     if (!getToken()) {
       setUser(null);
       setLoading(false);
@@ -61,11 +79,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(() => {
     clearToken();
+    localStorage.removeItem("demo_mode");
+    localStorage.removeItem("demo_email");
+    setIsDemoMode(false);
     setUser(null);
     router.replace("/login");
   }, [router]);
 
-  return <AuthContext.Provider value={{ user, loading, login, logout }}>{children}</AuthContext.Provider>;
+  return <AuthContext.Provider value={{ user, loading, login, logout, isDemoMode }}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {
