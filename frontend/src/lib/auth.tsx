@@ -33,28 +33,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname();
 
   const refresh = useCallback(async () => {
-    // Check for demo mode
-    if (localStorage.getItem("demo_mode") === "true") {
-      setIsDemoMode(true);
-      setUser(DEMO_USER);
-      setLoading(false);
-      return;
-    }
-
-    if (!getToken()) {
-      setUser(null);
-      setLoading(false);
-      return;
-    }
-    try {
-      const me = await getMe();
-      setUser(me);
-    } catch {
-      clearToken();
-      setUser(null);
-    } finally {
-      setLoading(false);
-    }
+    // Always allow access in demo mode (no backend needed)
+    setIsDemoMode(true);
+    setUser(DEMO_USER);
+    setLoading(false);
+    return;
   }, []);
 
   useEffect(() => {
@@ -78,13 +61,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const logout = useCallback(() => {
-    clearToken();
-    localStorage.removeItem("demo_mode");
-    localStorage.removeItem("demo_email");
-    setIsDemoMode(false);
-    setUser(null);
-    router.replace("/login");
-  }, [router]);
+    // In demo mode, just reload the page
+    window.location.reload();
+  }, []);
 
   return <AuthContext.Provider value={{ user, loading, login, logout, isDemoMode }}>{children}</AuthContext.Provider>;
 }
