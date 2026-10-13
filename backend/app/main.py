@@ -11,6 +11,7 @@ from app.modules.folders.router import router as folders_router
 from app.modules.requisitions.router import router as requisitions_router
 from app.modules.uploads.router import UPLOAD_ROOT
 from app.modules.uploads.router import router as uploads_router
+from app.modules.workforce.router import router as workforce_router
 
 app = FastAPI(title="Jaknot ATS API", version="1.0.0")
 
@@ -32,6 +33,7 @@ app.include_router(requisitions_router)
 app.include_router(candidates_router)
 app.include_router(folders_router)
 app.include_router(uploads_router)
+app.include_router(workforce_router)
 app.mount("/uploads", StaticFiles(directory=UPLOAD_ROOT), name="uploads")
 
 

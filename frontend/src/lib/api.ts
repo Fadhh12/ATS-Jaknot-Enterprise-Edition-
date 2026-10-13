@@ -181,3 +181,75 @@ export const deleteFolder = (id: string) =>
   request<void>(`/api/v1/folders/${id}`, {
     method: "DELETE",
   });
+
+// Workforce Planning (FR-02)
+export type ManpowerPlan = {
+  id: string;
+  department_id: string;
+  department_name: string;
+  position_title: string;
+  current_headcount: number;
+  target_headcount: number;
+  budget_headcount: number;
+  justification: string | null;
+  period_year: number;
+  period_month: number;
+  status: string;
+  created_by: string;
+  created_at: string;
+  vacancy_count: number;
+};
+
+export type DepartmentSummary = {
+  department_id: string;
+  department_name: string;
+  total_positions: number;
+  total_current: number;
+  total_target: number;
+  total_budget: number;
+};
+
+export const listManpowerPlans = () => request<ManpowerPlan[]>("/api/v1/workforce");
+
+export const getDepartmentSummary = () => request<DepartmentSummary[]>("/api/v1/workforce/departments");
+
+export const createManpowerPlan = (payload: {
+  department_id: string;
+  department_name: string;
+  position_title: string;
+  current_headcount: number;
+  target_headcount: number;
+  budget_headcount: number;
+  justification?: string;
+  period_year: number;
+  period_month: number;
+}) =>
+  request<ManpowerPlan>("/api/v1/workforce", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+
+export const updateManpowerPlan = (
+  id: string,
+  payload: Partial<{
+    department_id: string;
+    department_name: string;
+    position_title: string;
+    current_headcount: number;
+    target_headcount: number;
+    budget_headcount: number;
+    justification: string;
+    period_year: number;
+    period_month: number;
+    status: string;
+  }>
+) =>
+  request<ManpowerPlan>(`/api/v1/workforce/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+
+export const deleteManpowerPlan = (id: string) =>
+  request<void>(`/api/v1/workforce/${id}`, {
+    method: "DELETE",
+  });

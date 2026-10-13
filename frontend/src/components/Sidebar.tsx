@@ -49,10 +49,20 @@ const navLinks: { href: string; label: string; icon: ReactNode }[] = [
       </svg>
     ),
   },
+  {
+    href: "/workforce",
+    label: "Workforce Planning",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="size-5 shrink-0">
+        <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
+        <circle cx="9" cy="7" r="4" />
+        <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" />
+      </svg>
+    ),
+  },
 ];
 
 const lockedLinks = [
-  "Workforce Planning",
   "Sourcing",
   "Candidate Pipeline",
   "Screening & Scorecard",
@@ -171,7 +181,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
       </nav>
 
       <div className="mt-6 min-h-0 flex-1 overflow-y-auto border-t border-white/10 pt-5">
-        <div className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-[0.08em] text-white/40">Future Modules</div>
+        <div className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-[0.08em] text-white/40">More Modules</div>
         <div className="space-y-1">
           {lockedLinks.map((label) => (
             <button
