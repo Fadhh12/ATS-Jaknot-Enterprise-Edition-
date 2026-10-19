@@ -282,6 +282,7 @@ export default function WorkforcePage() {
               <th className="px-4 font-semibold">Current</th>
               <th className="px-4 font-semibold">Target</th>
               <th className="px-4 font-semibold">Budget</th>
+              <th className="px-4 font-semibold">Vacancy Gap</th>
               <th className="px-4 font-semibold">Period</th>
               <th className="px-4 font-semibold">Status</th>
               <th className="px-4 font-semibold">Action</th>
@@ -290,16 +291,22 @@ export default function WorkforcePage() {
           <tbody className="text-sm">
             {loading && (
               <tr>
-                <td colSpan={8} className="px-4 py-8 text-center text-text-muted">Loading...</td>
+                <td colSpan={9} className="px-4 py-8 text-center text-text-muted">Loading...</td>
               </tr>
             )}
-            {!loading && filtered.map((plan) => (
+            {!loading && filtered.map((plan) => {
+              const vacancyGap = plan.target_headcount - plan.current_headcount;
+              const gapColor = vacancyGap > 0 ? "text-warning" : vacancyGap < 0 ? "text-success" : "text-text-muted";
+              return (
               <tr key={plan.id} className="h-[52px] border-t border-border transition hover:bg-surface-alt/60">
                 <td className="px-4 font-medium">{plan.position_title}</td>
                 <td className="px-4 text-text-secondary">{plan.department_name}</td>
                 <td className="px-4 tabular-nums">{plan.current_headcount}</td>
                 <td className="px-4 tabular-nums">{plan.target_headcount}</td>
                 <td className="px-4 tabular-nums">{plan.budget_headcount}</td>
+                <td className={`px-4 tabular-nums font-medium ${gapColor}`}>
+                  {vacancyGap > 0 ? `+${vacancyGap}` : vacancyGap}
+                </td>
                 <td className="px-4 text-text-secondary">
                   {months[plan.period_month - 1]} {plan.period_year}
                 </td>
@@ -332,7 +339,8 @@ export default function WorkforcePage() {
                   </div>
                 </td>
               </tr>
-            ))}
+            );
+            })}
             {!loading && filtered.length === 0 && (
               <tr>
                 <td colSpan={8} className="px-4 py-14 text-center text-text-muted">
