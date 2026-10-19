@@ -121,7 +121,7 @@ export default function WorkforcePage() {
       setForm(emptyForm);
       setOpen(false);
     } catch (err) {
-      setFormError(err instanceof ApiError ? err.message : "Could not reach the server.");
+      setFormError("Could not reach the server. Try again.");
     } finally {
       setSubmitting(false);
     }
@@ -354,7 +354,7 @@ export default function WorkforcePage() {
                   {months[plan.period_month - 1]} {plan.period_year}
                 </td>
                 <td className="px-4">
-                  <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${statusColors[plan.status] || "bg-gray-100 text-gray-700"}`}>
+                  <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${statusConfig[plan.status]?.bg || "bg-gray-100"} ${statusConfig[plan.status]?.text || "text-gray-700"}`}>
                     {plan.status}
                   </span>
                 </td>
