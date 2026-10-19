@@ -157,7 +157,10 @@ export default function WorkforcePage() {
   return (
     <div>
       <div className="mb-5 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
-        <h1 className="text-2xl font-bold tracking-tight text-text-primary lg:text-3xl">Workforce Planning</h1>
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-text-primary lg:text-3xl">Workforce Planning</h1>
+          <p className="mt-0.5 text-sm text-text-secondary">Manpower Planning & Vacancy Reconciliation</p>
+        </div>
         <button
           type="button"
           onClick={() => {
