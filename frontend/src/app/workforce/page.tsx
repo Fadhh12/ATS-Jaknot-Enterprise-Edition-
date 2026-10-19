@@ -10,7 +10,6 @@ import {
   type DepartmentSummary,
   type ManpowerPlan,
 } from "@/lib/api";
-import { ApiError } from "@/lib/api";
 
 const DEPARTMENTS = ["Warehouse", "HRGA", "Marketing", "Operations", "Finance", "IT"];
 
@@ -27,15 +26,15 @@ const emptyForm = {
 };
 
 const months = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December"
+  "Jan", "Feb", "Mar", "Apr", "Mei", "Jun",
+  "Jul", "Agu", "Sep", "Okt", "Nov", "Des"
 ];
 
-const statusColors: Record<string, string> = {
-  Draft: "bg-gray-100 text-gray-700",
-  Active: "bg-success/10 text-success",
-  "On Hold": "bg-warning-soft text-warning",
-  Closed: "bg-error/10 text-error",
+const statusConfig: Record<string, { bg: string; text: string; dot: string }> = {
+  Draft: { bg: "bg-gray-100", text: "text-gray-600", dot: "bg-gray-400" },
+  Active: { bg: "bg-emerald-50", text: "text-emerald-600", dot: "bg-emerald-500" },
+  "On Hold": { bg: "bg-amber-50", text: "text-amber-600", dot: "bg-amber-500" },
+  Closed: { bg: "bg-red-50", text: "text-red-600", dot: "bg-red-400" },
 };
 
 export default function WorkforcePage() {
@@ -158,8 +157,22 @@ export default function WorkforcePage() {
     <div>
       <div className="mb-5 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-text-primary lg:text-3xl">Workforce Planning</h1>
-          <p className="mt-0.5 text-sm text-text-secondary">Manpower Planning & Vacancy Reconciliation</p>
+          <div className="flex items-center gap-2">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="size-5 text-primary">
+                <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" />
+              </svg>
+            </div>
+            <h1 className="text-2xl font-bold tracking-tight text-text-primary lg:text-3xl">Workforce Planning</h1>
+          </div>
+          <p className="mt-1 flex items-center gap-2 text-sm text-text-secondary">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="size-4 text-text-muted">
+              <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg>
+            Manpower Planning & Vacancy Reconciliation
+          </p>
         </div>
         <button
           type="button"
@@ -185,29 +198,59 @@ export default function WorkforcePage() {
 
       {/* Department Summary Cards */}
       <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {departments.map((dept) => (
-          <div key={dept.department_id} className="rounded-card border border-border bg-surface p-4 shadow-card">
-            <div className="text-sm font-semibold text-text-primary">{dept.department_name}</div>
-            <div className="mt-3 flex items-baseline justify-between">
-              <span className="text-2xl font-bold text-primary">{dept.total_positions}</span>
-              <span className="text-xs text-text-muted">positions</span>
+        {departments.map((dept, idx) => {
+          const fillPercent = dept.total_target > 0 ? Math.min(100, Math.round((dept.total_current / dept.total_target) * 100)) : 0;
+          return (
+          <div
+            key={dept.department_id}
+            className="group relative overflow-hidden rounded-xl border border-border bg-surface p-5 shadow-sm transition-all duration-300 hover:border-primary/30 hover:shadow-md hover:-translate-y-0.5"
+            style={{ animationDelay: `${idx * 100}ms` }}
+          >
+            <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-primary to-accent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+            <div className="flex items-start justify-between">
+              <div>
+                <div className="text-[11px] font-medium uppercase tracking-wider text-text-muted">{dept.department_name}</div>
+                <div className="mt-1 flex items-baseline gap-1.5">
+                  <span className="text-3xl font-bold text-primary">{dept.total_positions}</span>
+                  <span className="text-xs text-text-muted">posisi</span>
+                </div>
+              </div>
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 transition-colors group-hover:bg-primary/20">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="size-5 text-primary">
+                  <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
+                  <circle cx="9" cy="7" r="4" />
+                </svg>
+              </div>
             </div>
-            <div className="mt-3 space-y-1.5">
+            <div className="mt-4 space-y-2">
               <div className="flex justify-between text-xs">
-                <span className="text-text-muted">Current Headcount</span>
-                <span className="font-medium text-text-secondary">{dept.total_current}</span>
+                <span className="text-text-muted">Current</span>
+                <span className="font-semibold text-text-primary">{dept.total_current}</span>
               </div>
               <div className="flex justify-between text-xs">
-                <span className="text-text-muted">Target Headcount</span>
-                <span className="font-medium text-text-secondary">{dept.total_target}</span>
+                <span className="text-text-muted">Target</span>
+                <span className="font-semibold text-text-primary">{dept.total_target}</span>
               </div>
               <div className="flex justify-between text-xs">
-                <span className="text-text-muted">Budget Headcount</span>
-                <span className="font-medium text-text-secondary">{dept.total_budget}</span>
+                <span className="text-text-muted">Budget</span>
+                <span className="font-semibold text-text-primary">{dept.total_budget}</span>
+              </div>
+            </div>
+            <div className="mt-4">
+              <div className="flex justify-between text-[10px] text-text-muted mb-1">
+                <span>Fill Rate</span>
+                <span className="font-medium">{fillPercent}%</span>
+              </div>
+              <div className="h-1.5 overflow-hidden rounded-full bg-surface-alt">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-primary to-primary/70 transition-all duration-500"
+                  style={{ width: `${fillPercent}%` }}
+                />
               </div>
             </div>
           </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Vacancy Reconciliation Summary */}
