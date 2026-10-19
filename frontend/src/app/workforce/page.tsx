@@ -210,6 +210,30 @@ export default function WorkforcePage() {
         ))}
       </div>
 
+      {/* Vacancy Reconciliation Summary */}
+      <div className="mb-6 rounded-card border border-border bg-surface-alt p-4">
+        <h2 className="text-sm font-semibold text-text-primary">Vacancy Reconciliation</h2>
+        <p className="mt-1 text-xs text-text-secondary">Approved requisitions per department</p>
+        <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div className="text-center">
+            <div className="text-lg font-bold text-primary">{plans.filter(p => p.status === "Active").length}</div>
+            <div className="text-[10px] text-text-muted">Active Plans</div>
+          </div>
+          <div className="text-center">
+            <div className="text-lg font-bold text-accent">{plans.reduce((sum, p) => sum + p.vacancy_count, 0)}</div>
+            <div className="text-[10px] text-text-muted">Open Vacancies</div>
+          </div>
+          <div className="text-center">
+            <div className="text-lg font-bold text-success">{plans.reduce((sum, p) => sum + p.target_headcount, 0)}</div>
+            <div className="text-[10px] text-text-muted">Total Headcount Needed</div>
+          </div>
+          <div className="text-center">
+            <div className="text-lg font-bold text-text-secondary">{plans.reduce((sum, p) => sum + p.current_headcount, 0)}</div>
+            <div className="text-[10px] text-text-muted">Current Headcount</div>
+          </div>
+        </div>
+      </div>
+
       {/* Filters */}
       <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
         <div className="relative flex-1 sm:min-w-[200px]">
