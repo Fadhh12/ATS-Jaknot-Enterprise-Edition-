@@ -515,7 +515,7 @@ const dummyPlans: ManpowerPlan[] = [
     current_headcount: 1,
     target_headcount: 2,
     budget_headcount: 2,
-    justification: "Support growing hiring volume",
+    justification: "Support growing hiring volume for warehouse roles",
     period_year: 2026,
     period_month: 11,
     status: "Draft",
@@ -539,10 +539,27 @@ const dummyPlans: ManpowerPlan[] = [
     created_at: "2026-09-28T00:00:00Z",
     vacancy_count: 1,
   },
+  {
+    id: "demo-4",
+    department_id: "Operations",
+    department_name: "Operations",
+    position_title: "Store Crew",
+    current_headcount: 5,
+    target_headcount: 8,
+    budget_headcount: 8,
+    justification: "New store opening next month",
+    period_year: 2026,
+    period_month: 10,
+    status: "Active",
+    created_by: "demo-user",
+    created_at: "2026-09-25T00:00:00Z",
+    vacancy_count: 3,
+  },
 ];
 
 const dummyDepartments: DepartmentSummary[] = [
   { department_id: "Warehouse", department_name: "Warehouse", total_positions: 1, total_current: 2, total_target: 4, total_budget: 3 },
   { department_id: "HRGA", department_name: "HRGA", total_positions: 1, total_current: 1, total_target: 2, total_budget: 2 },
   { department_id: "Marketing", department_name: "Marketing", total_positions: 1, total_current: 1, total_target: 2, total_budget: 1 },
+  { department_id: "Operations", department_name: "Operations", total_positions: 1, total_current: 5, total_target: 8, total_budget: 8 },
 ];
