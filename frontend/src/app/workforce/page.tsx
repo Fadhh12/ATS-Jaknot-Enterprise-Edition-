@@ -184,17 +184,27 @@ export default function WorkforcePage() {
       )}
 
       {/* Department Summary Cards */}
-      <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {departments.map((dept) => (
           <div key={dept.department_id} className="rounded-card border border-border bg-surface p-4 shadow-card">
             <div className="text-sm font-semibold text-text-primary">{dept.department_name}</div>
-            <div className="mt-2 flex items-baseline justify-between">
+            <div className="mt-3 flex items-baseline justify-between">
               <span className="text-2xl font-bold text-primary">{dept.total_positions}</span>
               <span className="text-xs text-text-muted">positions</span>
             </div>
-            <div className="mt-2 flex justify-between text-xs text-text-secondary">
-              <span>Current: {dept.total_current}</span>
-              <span>Target: {dept.total_target}</span>
+            <div className="mt-3 space-y-1.5">
+              <div className="flex justify-between text-xs">
+                <span className="text-text-muted">Current Headcount</span>
+                <span className="font-medium text-text-secondary">{dept.total_current}</span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span className="text-text-muted">Target Headcount</span>
+                <span className="font-medium text-text-secondary">{dept.total_target}</span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span className="text-text-muted">Budget Headcount</span>
+                <span className="font-medium text-text-secondary">{dept.total_budget}</span>
+              </div>
             </div>
           </div>
         ))}
