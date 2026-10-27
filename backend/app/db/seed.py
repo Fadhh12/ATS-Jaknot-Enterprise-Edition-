@@ -11,6 +11,7 @@ from app.modules.auth.models import User
 from app.modules.candidates.models import Candidate
 from app.modules.candidates.service import build_folder_path
 from app.modules.requisitions.models import JobRequisition, RequisitionApproval
+from app.modules.screening.models import ScorecardTemplate
 
 
 # One dev login per role so each can be tried without a separate register call.
@@ -88,6 +89,43 @@ def seed(db: Session) -> None:
                     justification="New store opening next month.",
                     budget_range="Rp4.5M-Rp5.5M",
                     status="Approved",
+                    created_by=admin.id,
+                    created_at=datetime.utcnow() - timedelta(days=5),
+                ),
+            ]
+        )
+
+    if db.query(ScorecardTemplate).count() == 0:
+        db.add_all(
+            [
+                ScorecardTemplate(
+                    name="Standard Screening Scorecard",
+                    position_title=None,
+                    criteria=[
+                        {"name": "Relevant Experience", "weight": 30, "description": "Years and relevance of past work to the role."},
+                        {"name": "Skills & Knowledge", "weight": 25, "description": "Technical and functional command of the job."},
+                        {"name": "Communication", "weight": 20, "description": "Clarity, listening and responsiveness."},
+                        {"name": "Problem Solving", "weight": 15, "description": "Structured thinking under operational pressure."},
+                        {"name": "Culture & Teamwork", "weight": 10, "description": "Fit with the Jaknot working culture."},
+                    ],
+                    pass_threshold=70,
+                    hold_threshold=50,
+                    is_default=True,
+                    created_by=admin.id,
+                    created_at=datetime.utcnow() - timedelta(days=6),
+                ),
+                ScorecardTemplate(
+                    name="Daily Worker Screening",
+                    position_title="Store Crew",
+                    criteria=[
+                        {"name": "Attendance Reliability", "weight": 35, "description": "History of consistent attendance and punctuality."},
+                        {"name": "Physical Readiness", "weight": 30, "description": "Fitness for warehouse and store floor duties."},
+                        {"name": "Experience", "weight": 20, "description": "Prior retail or warehouse experience."},
+                        {"name": "Attitude", "weight": 15, "description": "Willingness and discipline on the floor."},
+                    ],
+                    pass_threshold=70,
+                    hold_threshold=50,
+                    is_default=False,
                     created_by=admin.id,
                     created_at=datetime.utcnow() - timedelta(days=5),
                 ),
