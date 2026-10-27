@@ -253,3 +253,81 @@ export const deleteManpowerPlan = (id: string) =>
   request<void>(`/api/v1/workforce/${id}`, {
     method: "DELETE",
   });
+
+// Screening & Scorecard (FR-05)
+export type ScorecardCriterion = {
+  name: string;
+  weight: number;
+  description: string;
+};
+
+export type ScorecardTemplate = {
+  id: string;
+  name: string;
+  position_title: string | null;
+  criteria: ScorecardCriterion[];
+  pass_threshold: number;
+  hold_threshold: number;
+  is_default: boolean;
+  created_by: string;
+  created_by_name: string;
+  created_at: string;
+};
+
+export type Recommendation = "Advance" | "Hold" | "Reject";
+
+export type ScreeningEvaluation = {
+  id: string;
+  candidate_id: string;
+  candidate_name: string;
+  candidate_position: string;
+  candidate_stage: string;
+  template_id: string;
+  template_name: string;
+  reviewer_id: string;
+  reviewer_name: string;
+  scores: Record<string, number>;
+  notes: Record<string, string>;
+  overall_notes: string | null;
+  weighted_score: number;
+  recommendation: Recommendation;
+  status: string;
+  created_at: string;
+  submitted_at: string;
+};
+
+export type ScreeningSummary = {
+  total_in_screening: number;
+  total_scored: number;
+  advance: number;
+  hold: number;
+  reject: number;
+  average_score: number;
+};
+
+export const listScorecardTemplates = () => request<ScorecardTemplate[]>("/api/v1/screening/templates");
+
+export const listScreeningEvaluations = (candidateId?: string) =>
+  request<ScreeningEvaluation[]>(
+    `/api/v1/screening/evaluations${candidateId ? `?candidate_id=${encodeURIComponent(candidateId)}` : ""}`
+  );
+
+export const getScreeningSummary = () => request<ScreeningSummary>("/api/v1/screening/summary");
+
+export const submitScreeningEvaluation = (payload: {
+  candidate_id: string;
+  template_id: string;
+  scores: Record<string, number>;
+  notes?: Record<string, string>;
+  overall_notes?: string;
+}) =>
+  request<ScreeningEvaluation>("/api/v1/screening/evaluations", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+
+export const updateCandidateStage = (candidateId: string, stage: string) =>
+  request<Candidate>(`/api/v1/candidates/${candidateId}/stage`, {
+    method: "PATCH",
+    body: JSON.stringify({ stage }),
+  });
