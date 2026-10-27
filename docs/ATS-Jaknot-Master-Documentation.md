@@ -71,6 +71,13 @@ graph TD
   * FR-03.2: Requisition wajib melalui alur persetujuan berjenjang (*sequential/parallel approval*) sebelum berstatus aktif.
   * FR-03.3: Requisition tidak dapat diajukan jika kuota *vacancy* pada MPP tidak mencukupi, kecuali mendapat *exception approval*.
 
+* **FR-05 (Screening & Scorecard):**
+  * FR-05.1: Setiap penilaian kandidat wajib memakai *scorecard* baku (templat) berisi kriteria berbobot, bukan catatan bebas.
+  * FR-05.2: Skor akhir dihitung otomatis sebagai rata-rata tertimbang dari skor tiap kriteria (1-5) sesuai bobotnya.
+  * FR-05.3: Rekomendasi (*Advance* / *Hold* / *Reject*) ditentukan oleh sistem berdasarkan ambang skor pada templat, bukan pilihan subjektif *reviewer*.
+  * FR-05.4: *Reviewer* wajib menyertakan catatan bukti pada setiap kriteria yang dinilai.
+  * FR-05.5: Penyelesaian scorecard otomatis memindahkan tahap kandidat (*Shortlist* / *Rejected* / tetap *Screening*) dan menyelaraskan *folder* virtualnya.
+
 ### 2.3 Business Rules (Aturan Bisnis)
 * **BR-01:** Setiap *Requisition* standar wajib terikat pada alokasi *vacancy* MPP yang sah dan aktif.
 * **BR-02:** Data kandidat yang masuk ke *centralized database* tidak boleh dihapus secara fisik demi keperluan audit; menggunakan mekanisme *retention policy*.
@@ -144,11 +151,20 @@ Pola arsitektur yang digunakan adalah **Modular Monolith** (bukan *microservices
 * **Tabel `applications` (Relasi Kandidat ke Lowongan):**
   * `id` (UUID, PK), `candidate_id` (FK -> candidates.id), `requisition_id` (FK -> job_postings.id), `current_stage`, `status` (Active, Hired, Rejected).
 
+* **Tabel `scorecard_templates` (Modul FR-05 - Rubrik Penilaian):**
+  * `id` (UUID, PK), `name`, `position_title` (nullable, null = berlaku untuk semua posisi), `criteria` (JSON: daftar `{name, weight, description}`), `pass_threshold`, `hold_threshold`, `is_default`, `created_by` (FK -> users.id), `created_at`.
+
+* **Tabel `screening_evaluations` (Modul FR-05 - Hasil Penilaian):**
+  * `id` (UUID, PK), `candidate_id` (FK -> candidates.id), `template_id` (FK -> scorecard_templates.id), `reviewer_id` (FK -> users.id), `scores` (JSON: skor 1-5 per kriteria), `notes` (JSON: bukti per kriteria), `overall_notes`, `weighted_score`, `recommendation` (Advance, Hold, Reject), `status`, `created_at`, `submitted_at`.
+
 #### Relasi Antar Tabel:
 ```text
 users (1) ───────────< (N) job_requisitions
 job_requisitions (1) ─< (N) applications
 candidates (1) ───────< (N) applications
+candidates (1) ───────< (N) screening_evaluations
+scorecard_templates (1) ─< (N) screening_evaluations
+users (1) ───────────< (N) screening_evaluations
 ```
 
 ### 3.4 API Design (REST - Fokus Sprint 1: FR-01 & FR-03)
@@ -161,6 +177,12 @@ candidates (1) ───────< (N) applications
 | `PATCH` | `/requisitions/{id}/approve` | Menyetujui atau menolak permintaan lowongan oleh *Approver/Management*. |
 | `POST` | `/candidates/intake` | Mengunggah data kandidat baru ke *Centralized Database* & memicu *automated foldering* (FR-01). |
 | `GET` | `/candidates/search` | Melakukan pencarian dan filter data kandidat di dalam bank data terpusat. |
+| `GET` | `/screening/templates` | Menampilkan daftar templat *scorecard* beserta kriteria dan bobotnya (FR-05). |
+| `POST` | `/screening/templates` | Membuat templat *scorecard* baru untuk posisi tertentu (FR-05). |
+| `GET` | `/screening/evaluations` | Menampilkan riwayat penilaian kandidat beserta skor tertimbang dan rekomendasinya (FR-05). |
+| `POST` | `/screening/evaluations` | Submit scorecard kandidat; skor dan rekomendasi dihitung server-side (FR-05). |
+| `GET` | `/screening/summary` | Ringkasan jumlah kandidat per tahap dan rekomendasi (FR-05). |
+| `PATCH` | `/candidates/{id}/stage` | Memindahkan tahap kandidat dan menyelaraskan *folder* virtualnya (FR-05). |
 
 ### 3.5 Struktur Backend (Folder Structure)
 
@@ -175,7 +197,9 @@ backend/
 │   ├── modules/
 │   │   ├── auth/                 # Modul autentikasi & user management
 │   │   ├── requisitions/         # Modul FR-03 (Job Requisition & Approval)
-│   │   └── candidates/           # Modul FR-01 (Centralized Database & Foldering)
+│   │   ├── candidates/           # Modul FR-01 (Centralized Database & Foldering)
+│   │   ├── workforce/            # Modul FR-02 (Manpower Planning & Vacancy)
+│   │   └── screening/            # Modul FR-05 (Screening & Scorecard)
 │   └── db/
 │       ├── base.py
 │       ├── session.py
@@ -203,6 +227,7 @@ Mengadopsi estetika bersih, profesional, dan padat data ala software HR korporat
 * **Halaman Dashboard Utama:** Menampilkan ringkasan kartu metrik (*Open Requisitions, Total Candidates*). Modul Sprint 1 (FR-01 & FR-03) aktif dan dapat diakses, sementara modul masa depan diberi status *locked/greyed out*.
 * **Halaman Job Requisition (FR-03):** Tabel daftar lowongan kerja dengan filter status persetujuan, tombol *"Create Requisition"* beraksen oranye, dan modal formulir pengajuan bertingkat.
 * **Halaman Candidate Database (FR-01):** Tabel data pelamar bergaya korporat Workday, lengkap dengan kolom nama, tipe pelamar, tanggal melamar, dan navigasi folder otomatis.
+* **Halaman Screening & Scorecard (FR-05):** Antrean kandidat yang menunggu penilaian, tombol *"Score"* membuka *drawer* berisi kriteria berbobot, dan tabel riwayat scorecard yang sudah selesai beserta skor tertimbang serta rekomendasinya.
 
 ---
 

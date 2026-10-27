@@ -5,6 +5,37 @@ existing Workday-inspired system in place. The second pass (this update) rebuilt
 frontend from scratch to match the approved Jaknot ATS design reference pixel-for-pixel
 across all three screens.
 
+## Pass 3 — FR-05 Screening & Scorecard
+
+New screen at `frontend/src/app/screening/page.tsx`, built on the same tokens and
+card/table patterns as the rest of the dashboard.
+
+**Layout**
+- Five summary tiles: Awaiting Screening, Scored, Advance, Hold, Reject.
+- **Screening Queue** table — candidates whose stage is `Screening`, with position and
+  recommendation filters plus a search box that matches candidate, position and
+  reviewer.
+- **Completed Scorecards** table — submitted evaluations with weighted score,
+  recommendation badge, reviewer and submission date.
+- The "Score" action opens the shared `SlideOver`; a secondary arrow action advances a
+  candidate to Shortlist without scoring.
+
+**Scorecard drawer**
+- Template picker (position-specific template first, then the default rubric).
+- One card per criterion: name, weight chip, description, a 1-5 score row with a
+  tooltip per score, and an evidence/notes field.
+- A live panel shows the weighted percentage, a progress bar and the recommendation
+  the rubric will produce, alongside the Advance/Hold thresholds. The reviewer sees the
+  outcome before submitting rather than after.
+
+**Navigation** — "Screening & Scorecard" moved out of the locked roadmap list into the
+primary sidebar, and FR-05 is listed as active on the overview sprint board.
+
+**Data** — `lib/api.ts` gains `listScorecardTemplates`, `listScreeningEvaluations`,
+`getScreeningSummary`, `submitScreeningEvaluation` and `updateCandidateStage`. The page
+falls back to sample data when the API is unreachable, and in that mode the scorecard is
+scored locally so the flow completes without a backend.
+
 ## Pass 2 — full rebuild to match the approved reference
 
 ### Design tokens (`tailwind.config.ts`)
