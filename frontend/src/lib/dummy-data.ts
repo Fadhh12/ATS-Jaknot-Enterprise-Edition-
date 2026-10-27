@@ -151,6 +151,7 @@ export const sprintModules = [
   { code: "FR-01", label: "Candidate Database", active: true },
   { code: "FR-03", label: "Job Requisition", active: true },
   { code: "FR-02", label: "Workforce Planning", active: true },
+  { code: "FR-05", label: "Screening & Scorecard", active: true },
   { code: null, label: "Candidate Pipeline", active: false },
   { code: null, label: "Interview Scheduling", active: false },
 ];
