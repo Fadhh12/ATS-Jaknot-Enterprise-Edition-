@@ -34,3 +34,7 @@ class CandidateOut(BaseModel):
 
 class CandidateFolderAssign(BaseModel):
     folder_id: uuid.UUID | None
+
+
+class CandidateStageUpdate(BaseModel):
+    stage: str

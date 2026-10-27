@@ -6,7 +6,12 @@ from sqlalchemy.orm import Session
 from app.core.dependencies import require_role
 from app.db.session import get_db
 from app.modules.candidates import service
-from app.modules.candidates.schemas import CandidateFolderAssign, CandidateIntake, CandidateOut
+from app.modules.candidates.schemas import (
+    CandidateFolderAssign,
+    CandidateIntake,
+    CandidateOut,
+    CandidateStageUpdate,
+)
 
 router = APIRouter(prefix="/api/v1/candidates", tags=["candidates"])
 
@@ -39,3 +44,13 @@ def assign_folder(
     _user=Depends(require_role(*ANY_ROLE)),
 ):
     return service.assign_folder(db, candidate_id, payload.folder_id)
+
+
+@router.patch("/{candidate_id}/stage", response_model=CandidateOut)
+def update_stage(
+    candidate_id: uuid.UUID,
+    payload: CandidateStageUpdate,
+    db: Session = Depends(get_db),
+    _user=Depends(require_role("recruiter_primary", "recruiter_admin", "hiring_manager", "recruiting_administrator")),
+):
+    return service.update_stage(db, candidate_id, payload.stage)

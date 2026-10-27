@@ -71,6 +71,17 @@ def assign_folder(db: Session, candidate_id, folder_id) -> Candidate:
     return candidate
 
 
+def update_stage(db: Session, candidate_id, stage: str) -> Candidate:
+    """FR-05: moving a candidate between stages re-files them under the new
+    stage folder (FR-01.2 keeps the virtual path in sync with the stage)."""
+    candidate = db.query(Candidate).filter(Candidate.id == candidate_id).one()
+    candidate.stage = stage
+    candidate.folder_path = build_folder_path(candidate.position_title, stage, candidate.applied_at)
+    db.commit()
+    db.refresh(candidate)
+    return candidate
+
+
 def search_candidates(db: Session, query: str | None) -> list[Candidate]:
     q = db.query(Candidate)
     if query:

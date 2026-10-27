@@ -9,6 +9,7 @@ from app.modules.auth.router import router as auth_router
 from app.modules.candidates.router import router as candidates_router
 from app.modules.folders.router import router as folders_router
 from app.modules.requisitions.router import router as requisitions_router
+from app.modules.screening.router import router as screening_router
 from app.modules.uploads.router import UPLOAD_ROOT
 from app.modules.uploads.router import router as uploads_router
 from app.modules.workforce.router import router as workforce_router
@@ -34,6 +35,7 @@ app.include_router(candidates_router)
 app.include_router(folders_router)
 app.include_router(uploads_router)
 app.include_router(workforce_router)
+app.include_router(screening_router)
 app.mount("/uploads", StaticFiles(directory=UPLOAD_ROOT), name="uploads")
 
 
